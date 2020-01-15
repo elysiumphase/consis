@@ -1,0 +1,50 @@
+{
+  "name": "consis",
+  "version": "1.0.0",
+  "author": "Adrien Valcke <adrienvalcke@icloud.com> (https://github.com/adrienv1520)",
+  "description": "A small Node.js library for type casting, http/s requests, object cloning, and other object, image, time and uuid helpers",
+  "bin": {},
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint lib/ index.js",
+    "pretest": "npm run lint",
+    "test": "mocha test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:adrienv1520/consis.git"
+  },
+  "engines": {
+    "node": ">=8.17.0",
+    "npm": ">=6.13.4"
+  },
+  "keywords": [
+    "consis",
+    "utility",
+    "library",
+    "consistency",
+    "performance",
+    "Node.js",
+    "JavaScript",
+    "cloning",
+    "deep cloning",
+    "clone",
+    "type casting",
+    "http request",
+    "requester"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "chai": "4.2.0",
+    "chai-as-promised": "~7.1.1",
+    "eslint": "~6.8.0",
+    "eslint-config-airbnb-base": "~14.0.0",
+    "eslint-plugin-import": "~2.19.1",
+    "mocha": "6.2.2",
+    "uuid": "~3.3.3"
+  },
+  "private": false,
+  "preferGlobal": false,
+  "analyze": false,
+  "license": "MIT"
+}
