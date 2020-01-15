@@ -1,12 +1,12 @@
 {
   "name": "consis",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Adrien Valcke <adrienvalcke@icloud.com> (https://github.com/adrienv1520)",
   "description": "A small Node.js library for type casting, http/s requests, object cloning, and other object, image, time and uuid helpers",
   "bin": {},
   "main": "lib/index.js",
   "scripts": {
-    "lint": "eslint lib/ index.js",
+    "lint": "eslint lib/",
     "pretest": "npm run lint",
     "test": "mocha test/*"
   },
