@@ -472,7 +472,7 @@ Make a deep copy of a specified object. **Does not handle circular references, u
   - Returns: **<Any\>**
 
 
-Supported:
+**Supported**:
   - object literal
   - custom object including its whole prototype
   - primitives:
@@ -510,7 +510,7 @@ Supported:
     - *Float64Array*
 
 
-Not supported:
+**Not supported**:
   - *AsyncFunction*
   - *Function*
   - *GeneratorFunction*
