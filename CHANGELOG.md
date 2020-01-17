@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.0.3 - delivery @17/01/2020
+
+- update Readme
+
 ## 1.0.2 - delivery @15/01/2020
 
 - update eslinting
