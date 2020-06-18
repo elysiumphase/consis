@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.1.0 - delivery @18/06/2020
+
+- add string helpers capitalize, camelCase
+- move object.split helper to string helpers
+- add string helpers tests
+- update Readme
+- fix dependencies vulnerabilities
+
 ## 1.0.3 - delivery @17/01/2020
 
 - update Readme
