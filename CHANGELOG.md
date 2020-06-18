@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.1 - delivery @18/06/2020
+
+- update project description
+
 ## 1.1.0 - delivery @18/06/2020
 
 - add string helpers capitalize, camelCase
