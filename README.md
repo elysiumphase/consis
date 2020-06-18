@@ -3,7 +3,7 @@
 <p>
 
 <p align="center">
-  A small Node.js library for type casting, http/s requests, object cloning, and other object, image, time and uuid helpers.
+  A small Node.js library for type casting, http/s requests, object cloning, and other object, string, image, time and uuid helpers.
 <p>
 
 # Table of Contents
