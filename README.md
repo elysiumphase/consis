@@ -39,9 +39,12 @@
     - [getType(thing)](#gettypething)
     - [getTypeName(thing)](#gettypenamething)
     - [clone(thing)](#clonething)
-    - [split({ string, separator\[, max\] })](#split-string-separator-max-)
   - [Requester](#requester)
     - [requester(options): AsyncFunction](#requesteroptions-asyncfunction)
+  - [String](#string)
+    - [split({ string, separator\[, max\] })](#split-string-separator-max-)
+    - [capitalize({ string\[, first\] })](#capitalize-string-first-)
+    - [camelCase({ string, separator })](#camelcase-string-separator-)
   - [Time](#time)
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
@@ -546,21 +549,6 @@ clone(null); // null
 clone(NaN); // NaN
 ```
 
-### split({ string, separator[, max] })
-Split a string with the specified separator with a possible maximum split values.
-  - options**<Object\>**
-    - `string`**<String\>**
-    - `separator`**<String\>** | **<RegExp\>**
-    - `max`**<Number\>** Optional maximum split values.
-  - Returns: **<Array\>** | **undefined**
-
-Examples:
-```javascript
-split({ string: 'a,b,c,d,e', separator: ',' }) // ['a', 'b', 'c', 'd', 'e']
-split({ string: 'a,b,c,d,e', separator: ',', max: 2 }) // ['a', 'b']
-split({ string: 'a, b,c,  d,e', separator: /,\s*/, max: 2 }) // ['a', 'b']
-```
-
 ## Requester
 Http/s request helper.
 
@@ -700,6 +688,67 @@ const pipeline = promisify(stream.pipeline);
     // handle error
   }
 })();
+```
+
+## String
+
+String helper.
+
+- `string`**<Object\>** with the following properties:
+
+### split({ string, separator[, max] })
+Split a string with the specified separator with a possible maximum split values.
+  - options**<Object\>**
+    - `string`**<String\>**
+    - `separator`**<String\>** | **<RegExp\>**
+    - `max`**<Number\>** Optional maximum split values.
+  - Returns: **<Array\>**
+
+Examples:
+```javascript
+split({ string: 'a,b,c,d,e', separator: ',' }) // ['a', 'b', 'c', 'd', 'e']
+split({ string: 'a,b,c,d,e', separator: ',', max: 2 }) // ['a', 'b']
+split({ string: 'a, b,c,  d,e', separator: /,\s*/, max: 2 }) // ['a', 'b']
+split() // []
+split({ string: 'a, b,c,  d,e', max: 2 }) // []
+split({ string: 'a, b,c,  d,e' }) // []
+```
+
+### capitalize({ string[, first] })
+put to upper case the first letter of a string.
+  - options**<Object\>**
+    - `string`**<String\>**
+    - `first`**<Boolean\>** Whether only the first letter should be in upper case.
+    - `max`**<Number\>** Optional maximum split values.
+  - Returns: **<String\>**
+
+Examples:
+```javascript
+capitalize({ string: 'abcde' }) // "Abcde"
+capitalize({ string: ' abcde' }) // " abcde"
+capitalize({ string: 'abCDe' }) // "AbCDe"
+capitalize({ string: 'abCDe', first: true }) // "Abcde"
+capitalize() // ""
+capitalize({ first: true }) // ""
+```
+
+### camelCase({ string, separator })
+Put to camel case a string which words are separated by a specific string or pattern.
+  - options**<Object\>**
+    - `string`**<String\>**
+    - `separator`**<String\>** | **<RegExp\>**
+  - Returns: **<String\>**
+
+Examples:
+```javascript
+camelCase({ string: 'camel-case-string', separator: '-' }) // "camelCaseString"
+camelCase({ string: 'camel, case, string', separator: ', ' }) // "camelCaseString"
+camelCase({ string: 'camel*case*string', separator: '*' }) // "camelCaseString"
+camelCase({ string: 'camel,   case,  string', separator: /,\s+/ }) // "camelCaseString"
+camelCase({ string: 'camel,   case,string', separator: /,\s*/ }) // "camelCaseString"
+camelCase() // ""
+camelCase({ string: 'camel,case,string' }) // ""
+camelCase({ separator: ',' }) // ""
 ```
 
 ## Time
