@@ -1,5 +1,5 @@
 const { expect } = require('./Common');
-const { object: { exists, is, hasOwn, has, sizeOwn, isEmptyOwn, getType, getTypeName, clone } } = require('../lib');
+const { object: { exists, is, hasOwn, has, sizeOwn, isEmptyOwn, getType, getTypeName, compare, clone } } = require('../lib');
 
 describe('#object', function() {
   context('when using exists', function() {
@@ -699,6 +699,32 @@ describe('#object', function() {
 
     it('should return undefined when testing nothing', function() {
       expect(getTypeName()).to.be.undefined;
+    });
+  });
+
+  context('when using compare', function() {
+    it('should return an object with the comparison result with numbers', function() {
+      expect(compare(5, 9)).to.be.an('object').and.to.eql({ inferior: true, superior: false, equal: false });
+      expect(compare(-98, 98)).to.be.an('object').and.to.eql({ inferior: true, superior: false, equal: false  });
+      expect(compare(55, -1)).to.be.an('object').and.to.eql({ inferior: false, superior: true, equal: false  });
+      expect(compare(55, 55)).to.be.an('object').and.to.eql({ inferior: false, superior: false, equal: true  });
+    });
+
+    it('should return an object with the comparison result with strings', function() {
+      expect(compare('a', 'b')).to.be.an('object').and.to.eql({ inferior: true, superior: false, equal: false  });
+      expect(compare('z', 'i')).to.be.an('object').and.to.eql({ inferior: false, superior: true, equal: false  });
+      expect(compare('Abc', 'abc')).to.be.an('object').and.to.eql({ inferior: false, superior: false, equal: true  });
+      expect(compare('énk', 'enk')).to.be.an('object').and.to.eql({ inferior: false, superior: true, equal: false  });
+      expect(compare('test', 'test')).to.be.an('object').and.to.eql({ inferior: false, superior: false, equal: true  });
+    });
+
+    it('should return an empty object when comparing values other than numbers or strings', function() {
+      expect(compare()).to.be.an('object').and.to.eql({});
+      expect(compare(null)).to.be.an('object').and.to.eql({});
+      expect(compare(undefined)).to.be.an('object').and.to.eql({});
+      expect(compare(NaN)).to.be.an('object').and.to.eql({});
+      expect(compare(NaN, NaN)).to.be.an('object').and.to.eql({});
+      expect(compare([], Symbol('s'))).to.be.an('object').and.to.eql({});
     });
   });
 

@@ -29,6 +29,8 @@
   - [Encodings](#encodings)
   - [Image](#image)
     - [isPng(buffer)](#ispngbuffer)
+  - [Math](#math)
+    - [minmax(array)](#minmaxarray)
   - [Object](#object)
     - [exists(thing)](#existsthing)
     - [is(Type, thing)](#istype-thing)
@@ -38,6 +40,7 @@
     - [isEmptyOwn(thing)](#isemptyownthing)
     - [getType(thing)](#gettypething)
     - [getTypeName(thing)](#gettypenamething)
+    - [compare(a, b)](#comparea-b)
     - [clone(thing)](#clonething)
   - [Requester](#requester)
     - [requester(options): AsyncFunction](#requesteroptions-asyncfunction)
@@ -323,6 +326,27 @@ Whether a buffer is of png format.
   - `buffer`**<Buffer\>**
   - Returns: **<Boolean\>**
 
+## Math
+
+Math helper.
+
+- `math`**<Object\>** with the following property:
+
+### minmax(array)
+Directly get min and max values in a specific array. Works with numbers or strings.
+  - `array`**<Array\>**<Number|String\>
+  - Returns: **<Object\>**
+      - min: **<Number|String\>**
+      - max: **<Number|String\>**
+
+Examples:
+```javascript
+minmax([55, 9]); // { min: 9, max: 55 }
+minmax(['a', 'b']); // { min: 'a', max: 'b' }
+minmax({}); // {}
+minmax(undefined|null|NaN); // {}
+```
+
 ## Object
 Object helper.
 
@@ -467,6 +491,26 @@ class MyError extends Error {}
 getTypeName(new MyError); // 'MyError'
 
 getTypeName(undefined|null|NaN); // undefined
+```
+
+### compare(a, b)
+Compare two numbers or two strings (ignoring case and accents).
+  - `a`**<String|Number\>**
+  - `b`**<String|Number\>**
+  - Returns: **<Object\>**
+      - inferior: **<Boolean\>**
+      - superior: **<Boolean\>**
+      - equal: **<Boolean\>**
+
+Examples:
+```javascript
+compare('a', 'z'); // { inferior: true, superior: false, equal: false }
+compare(55, 9); // { inferior: false, superior: true, equal: false }
+compare(5, 5); // { inferior: false, superior: false, equal: true }
+compare(null); // {}
+compare(undefined); // {}
+compare(NaN, NaN); // {}
+compare(); // {}
 ```
 
 ### clone(thing)

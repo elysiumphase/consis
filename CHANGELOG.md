@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.2.0 - delivery @11/08/2020
+
+- add math.minmax helper
+- add object.compare helper
+- fix requester
+- add tests
+- update readme
+
 ## 1.1.1 - delivery @18/06/2020
 
 - update project description
