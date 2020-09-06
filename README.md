@@ -742,7 +742,7 @@ String helper.
 
 ### split({ string, separator[, max] })
 Split a string with the specified separator with a possible maximum split values.
-  - options**<Object\>**
+  - `options`**<Object\>**
     - `string`**<String\>**
     - `separator`**<String\>** | **<RegExp\>**
     - `max`**<Number\>** Optional maximum split values.
@@ -760,7 +760,7 @@ split({ string: 'a, b,c,  d,e' }) // []
 
 ### capitalize({ string[, first] })
 put to upper case the first letter of a string.
-  - options**<Object\>**
+  - `options`**<Object\>**
     - `string`**<String\>**
     - `first`**<Boolean\>** Whether only the first letter should be in upper case.
     - `max`**<Number\>** Optional maximum split values.
@@ -778,7 +778,7 @@ capitalize({ first: true }) // ""
 
 ### camelCase({ string, separator })
 Put to camel case a string which words are separated by a specific string or pattern.
-  - options**<Object\>**
+  - `options`**<Object\>**
     - `string`**<String\>**
     - `separator`**<String\>** | **<RegExp\>**
   - Returns: **<String\>**
