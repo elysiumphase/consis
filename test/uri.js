@@ -215,11 +215,6 @@ describe('#uri', function() {
       expect(() => checkURISyntax({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
     });
 
-    it('should throw an uri error when uri has no slashes', function() {
-      expect(() => checkURISyntax('http:www.example.com\\index.html')).to.throw(URIError).with.property('code', 'URI_SLASHES_ONLY');
-      expect(() => checkURISyntax('http:/www.example.com\\index.html')).to.throw(URIError).with.property('code', 'URI_SLASHES_ONLY');
-    });
-
     it('should throw an uri error when uri has no scheme', function() {
       expect(() => checkURISyntax('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       // url.parse could never return an empty scheme so URI_EMPTY_SCHEME error cannot be thrown
