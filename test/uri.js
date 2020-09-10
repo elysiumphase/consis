@@ -36,18 +36,21 @@ const digits = '0123456789';
 
 // allowed
 const allowed = '!"#$%&\'()*+,-./:;=?@[]_~';
-const allowedURIChars = `${az}${hexdig}${digits}${allowed}`;
+const allowedURIChars = `${az}${digits}${allowed}`;
 const allowedSitemapChars = `${allowedURIChars}<>`;
 const domainAllowedChars = `${az}${digits}-`;
 const allowedSchemeChars = `${az}${digits}+-.`;
 const allowedPercentEncodingChars = `${digits}${hexdig}`;
-const allowedUserinfoChars = `${az}${digits}${hexdig}!"$%&'()*+,-.:;=_~`;
+const allowedUserinfoChars = `${az}${digits}!"$%&'()*+,-.:;=_~`;
 
 // disallowed
-const disallowedSitemapChars = '\\^`{|}';
-const disallowedDomainChars = `${AZ}${allowed.replace('-', '')}`;
+const disallowed = '\\^`{|}';
+const disallowedSitemapChars = `${AZ}${disallowed}`;
 const disallowedURIChars = `${disallowedSitemapChars}<>`;
-const disallowedUserinfoChars = `${GZ}#/?@[]`;
+const disallowedDomainChars = `${AZ}${allowed.replace('-', '')}`;
+const disallowedSchemeChars = `${disallowedURIChars}${allowed.replace(/[-+.]/g, '')}`;
+const disallowedPercentEncodingChars = `${az}${GZ}${allowed}${disallowed}<>`;
+const disallowedUserinfoChars = '#/?@[]';
 const disallowedOtherChars = '€°éùèàç §£';
 
 describe('#uri', function() {
@@ -83,7 +86,7 @@ describe('#uri', function() {
     });
 
     it('should return a punycode ASCII serialization of the domain if domain is a valid ASCII FQDN', function() {
-      expect(punycode('google.com.')).to.be.a('string').and.to.equals('google.com.');
+      expect(punycode('example.com.')).to.be.a('string').and.to.equals('example.com.');
       expect(punycode('a.b.c.d.e.fg')).to.be.a('string').and.to.equals('a.b.c.d.e.fg');
     });
   });
@@ -120,7 +123,7 @@ describe('#uri', function() {
     });
 
     it('should return a Unicode serialization of the domain if domain is a valid ASCII FQDN', function() {
-      expect(punydecode('google.com.')).to.be.a('string').and.to.equals('google.com.');
+      expect(punydecode('example.com.')).to.be.a('string').and.to.equals('example.com.');
       expect(punydecode('a.b.c.d.e.fg')).to.be.a('string').and.to.equals('a.b.c.d.e.fg');
     });
   });
@@ -168,7 +171,7 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
 
-      parsedURI = parseURI('httpwwwgoogle5com');
+      parsedURI = parseURI('httpwwwexample5com');
       expect(parsedURI).to.be.an('object').and.to.have.property('scheme', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
@@ -176,11 +179,11 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
-      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'httpwwwgoogle5com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'httpwwwexample5com');
       expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
 
-      parsedURI = parseURI('google.com');
+      parsedURI = parseURI('example.com');
       expect(parsedURI).to.be.an('object').and.to.have.property('scheme', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
@@ -188,11 +191,11 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
-      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'google.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'example.com');
       expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
 
-      parsedURI = parseURI('google.com/index.html');
+      parsedURI = parseURI('example.com/index.html');
       expect(parsedURI).to.be.an('object').and.to.have.property('scheme', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
@@ -200,11 +203,11 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
-      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'google.com/index.html');
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', 'example.com/index.html');
       expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
 
-      parsedURI = parseURI('/google.com/index.html');
+      parsedURI = parseURI('/example.com/index.html');
       expect(parsedURI).to.be.an('object').and.to.have.property('scheme', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
@@ -212,7 +215,7 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
-      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/google.com/index.html');
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/example.com/index.html');
       expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
     });
@@ -332,6 +335,68 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('query', 'name=ferret');
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'nose');
     });
+
+    it('should return an object with authority and its components at null if uri has an invalid host', function() {
+      let parsedURI = parseURI('http://user:pass@xn--iñvalid.com:8080');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'http');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
+
+      parsedURI = parseURI('http://user:pass@xn--iñvalid.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'http');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
+
+      parsedURI = parseURI('http://xn--iñvalid.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'http');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
+
+      parsedURI = parseURI('http://user:pass@example.fr\\');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'http');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', null);
+
+      parsedURI = parseURI('http://user:pass@xn--iñvalid.com:8080/path?query=test#fragment');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'http');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/path');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', 'query=test');
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'fragment');
+    });
   });
 
   context('when using isDomainChar', function() {
@@ -426,9 +491,6 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedSitemapChars.length; i += 1) {
         expect(isSitemapChar(disallowedSitemapChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < GZ.length; i += 1) {
-        expect(isSitemapChar(GZ[i])).to.be.a('boolean').and.to.be.false;
-      }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
         expect(isSitemapChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
@@ -466,9 +528,6 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedURIChars.length; i += 1) {
         expect(isURIChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < GZ.length; i += 1) {
-        expect(isURIChar(GZ[i])).to.be.a('boolean').and.to.be.false;
-      }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
         expect(isURIChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
@@ -503,11 +562,8 @@ describe('#uri', function() {
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < disallowedURIChars.length; i += 1) {
-        expect(isSchemeChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
-      }
-      for (let i = 0; i < AZ.length; i += 1) {
-        expect(isSchemeChar(AZ[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedSchemeChars.length; i += 1) {
+        expect(isSchemeChar(disallowedSchemeChars[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
         expect(isSchemeChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
@@ -554,17 +610,8 @@ describe('#uri', function() {
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < az.length; i += 1) {
-        expect(isPercentEncodingChar(az[i])).to.be.a('boolean').and.to.be.false;
-      }
-      for (let i = 0; i < GZ.length; i += 1) {
-        expect(isPercentEncodingChar(GZ[i])).to.be.a('boolean').and.to.be.false;
-      }
-      for (let i = 0; i < allowed.length; i += 1) {
-        expect(isPercentEncodingChar(allowed[i])).to.be.a('boolean').and.to.be.false;
-      }
-      for (let i = 0; i < disallowedURIChars.length; i += 1) {
-        expect(isPercentEncodingChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedPercentEncodingChars.length; i += 1) {
+        expect(isPercentEncodingChar(disallowedPercentEncodingChars[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
         expect(isPercentEncodingChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
@@ -691,7 +738,7 @@ describe('#uri', function() {
     });
 
     it('should return true if a domain name ends with . as a root label', function() {
-      expect(isDomain('google.com.')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('example.com.')).to.be.a('boolean').and.to.be.true;
       expect(isDomain('a.com.')).to.be.a('boolean').and.to.be.true;
       expect(isDomain('b.com.')).to.be.a('boolean').and.to.be.true;
       expect(isDomain('a.b.c.d.')).to.be.a('boolean').and.to.be.true;
@@ -783,12 +830,6 @@ describe('#uri', function() {
     });
   });
 
-  context('when using isIP', function() {
-    it('should return true if a domain name is localhost', function() {
-      expect(isDomain('localhost')).to.be.a('boolean').and.to.be.true;
-    });
-  });
-
   context('when using checkPercentEncoding', function() {
     it('should throw an uri error when uri is not a string', function() {
       expect(() => checkPercentEncoding()).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
@@ -866,33 +907,169 @@ describe('#uri', function() {
     });
   });
 
-  // console.log(checkURI('http://das-küchengeflüster.de./feed'));
+  context('when using checkURISyntax', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => checkURISyntax()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURISyntax({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+    });
 
-  // context('when using checkURISyntax', function() {
-  //   it('should throw an uri error when uri is not a string', function() {
-  //     expect(() => checkURISyntax()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //     expect(() => checkURISyntax({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
-  //   });
-  //
-  //   it('should throw an uri error when uri has no scheme', function() {
-  //     expect(() => checkURISyntax('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
-  //     // url.parse could never return an empty scheme so URI_EMPTY_SCHEME error cannot be thrown
-  //   });
-  //
-  //   it('should throw an uri error when uri has no path', function() {
-  //     expect(() => checkURISyntax('http:')).to.throw(URIError).with.property('code', 'URI_MISSING_PATH');
-  //   });
-  //
-  //   it('should throw an uri error when uri has no path', function() {
-  //     expect(() => checkURISyntax('http:')).to.throw(URIError).with.property('code', 'URI_MISSING_PATH');
-  //   });
-  // });
+    it('should throw an uri error when uri has no scheme', function() {
+      // scheme cannot be an empty string followinf parseURI behavior
+      expect(() => checkURISyntax('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => checkURISyntax('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    // parseURI always returns an empty path, regexp makes it impossible to have a null path
+
+    it('should throw an uri error when uri has no path', function() {
+      expect(() => checkURISyntax('http:')).to.not.throw;
+      expect(() => checkURISyntax(':')).to.not.throw;
+      expect(() => checkURISyntax('s://')).to.not.throw;
+    });
+
+    // if authority is present following parseURI behavior path will always be at least empty or start with /
+
+    it('should throw an uri error when authority is not present and path starts with //', function() {
+      expect(() => checkURISyntax('http://example.fr//path')).to.not.throw;
+      expect(() => checkURISyntax('http:////path')).to.throw(URIError).with.property('code', 'URI_INVALID_PATH');
+    });
+
+    it('should not throw if an uri has at least a scheme and a path', function() {
+      expect(() => checkURISyntax('http://example.com')).to.not.throw;
+      expect(() => checkURISyntax('http://example.com/path')).to.not.throw;
+      expect(() => checkURISyntax('http://')).to.not.throw;
+    });
+
+    it('should not throw when authority is not present and path does not start with //', function() {
+      expect(() => checkURISyntax('http:///path')).to.not.throw;
+    });
+
+    it('should return a specific object if no errors were thrown', function() {
+      let check = checkURISyntax('foo://中文.com:8042/over/there?name=ferret#nose');
+      expect(check).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(check).to.be.an('object').and.to.have.property('authority', 'xn--fiq228c.com:8042');
+      expect(check).to.be.an('object').and.to.have.property('authorityPunydecoded', '中文.com:8042');
+      expect(check).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(check).to.be.an('object').and.to.have.property('host', 'xn--fiq228c.com');
+      expect(check).to.be.an('object').and.to.have.property('hostPunydecoded', '中文.com');
+      expect(check).to.be.an('object').and.to.have.property('port', 8042);
+      expect(check).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(check).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(check).to.be.an('object').and.to.have.property('fragment', 'nose');
+      expect(check).to.be.an('object').and.to.have.property('schemeLen', 3);
+      expect(check).to.be.an('object').and.to.have.property('valid', true);
+
+      check = checkURISyntax('foo://example.com:80g42/over/there?name=ferret#nose');
+      expect(check).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(check).to.be.an('object').and.to.have.property('authority', 'example.com:80g42');
+      expect(check).to.be.an('object').and.to.have.property('authorityPunydecoded', 'example.com:80g42');
+      expect(check).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(check).to.be.an('object').and.to.have.property('host', 'example.com');
+      expect(check).to.be.an('object').and.to.have.property('hostPunydecoded', 'example.com');
+      expect(check).to.be.an('object').and.to.have.property('port', '80g42');
+      expect(check).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(check).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(check).to.be.an('object').and.to.have.property('fragment', 'nose');
+      expect(check).to.be.an('object').and.to.have.property('schemeLen', 3);
+      expect(check).to.be.an('object').and.to.have.property('valid', true);
+    });
+  });
+
+  context('when using checkURI that uses checkURISyntax', function() {
+  // SAME TESTS FROM checkURISyntax to check consistency
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => checkURI()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => checkURI({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+    });
+
+    it('should throw an uri error when uri has no scheme', function() {
+      // scheme cannot be an empty string followinf parseURI behavior
+      expect(() => checkURI('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => checkURI('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    // parseURI always returns an empty path, regexp makes it impossible to have a null path
+
+    it('should throw an uri error when uri has no path', function() {
+      expect(() => checkURI('http:')).to.not.throw;
+      expect(() => checkURI(':')).to.not.throw;
+      expect(() => checkURI('s://')).to.not.throw;
+    });
+
+    // if authority is present following parseURI behavior path will always be at least empty or start with /
+
+    it('should throw an uri error when authority is not present and path starts with //', function() {
+      expect(() => checkURI('http://example.fr//path')).to.not.throw;
+      expect(() => checkURI('http:////path')).to.throw(URIError).with.property('code', 'URI_INVALID_PATH');
+    });
+
+    it('should not throw if an uri has at least a scheme and a path', function() {
+      expect(() => checkURI('http://example.com')).to.not.throw;
+      expect(() => checkURI('http://example.com/path')).to.not.throw;
+      expect(() => checkURI('http://')).to.not.throw;
+    });
+
+    it('should not throw when authority is not present and path does not start with //', function() {
+      expect(() => checkURI('http:///path')).to.not.throw;
+    });
+
+    // additional tests
+    it('should throw an uri error when scheme has invalid chars', function() {
+      expect(() => checkURI('htép://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => checkURI('ht°p://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+    });
+
+    it('should throw an uri error when userinfo has invalid characters', function() {
+      expect(() => checkURI('foo://usér:pass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_USERINFO_CHAR');
+      expect(() => checkURI('foo://us€r:pass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_USERINFO_CHAR');
+      expect(() => checkURI('foo://user:pa[ss@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_USERINFO_CHAR');
+      expect(() => checkURI('foo://usEr:pass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_USERINFO_CHAR');
+      expect(() => checkURI('foo://usEr:pasS@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_USERINFO_CHAR');
+    });
+
+    it('should throw an uri error when userinfo has invalid percent encodings', function() {
+      expect(() => checkURI('foo://user%:pass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkURI('foo://user%2z:pass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkURI('foo://user:%acpass@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkURI('foo://user:pass%@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+      expect(() => checkURI('foo://user:pass%a@example.com:8042/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+    });
+
+    it('should throw an uri error when port is not a number', function() {
+      expect(() => checkURI('foo://example.com:80g42/over/there?name=ferret#nose')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should return a specific object if no errors were thrown', function() {
+      let check = checkURI('foo://中文.com:8042/over/there?name=ferret#nose');
+      expect(check).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(check).to.be.an('object').and.to.have.property('authority', 'xn--fiq228c.com:8042');
+      expect(check).to.be.an('object').and.to.have.property('authorityPunydecoded', '中文.com:8042');
+      expect(check).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(check).to.be.an('object').and.to.have.property('host', 'xn--fiq228c.com');
+      expect(check).to.be.an('object').and.to.have.property('hostPunydecoded', '中文.com');
+      expect(check).to.be.an('object').and.to.have.property('port', 8042);
+      expect(check).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(check).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(check).to.be.an('object').and.to.have.property('fragment', 'nose');
+      expect(check).to.be.an('object').and.to.have.property('valid', true);
+    });
+  });
+
+  // console.log(checkURI('http://das-küchengeflüster.de./feed'));
 });
