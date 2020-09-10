@@ -12,9 +12,6 @@ const {
     isUserinfoChar,
     isDomainLabel,
     isDomain,
-    isIP,
-    isIPv4,
-    isIPv6,
     checkPercentEncoding,
     checkURISyntax,
     checkURI,
@@ -31,21 +28,27 @@ const {
   },
 } = require('../lib');
 
-const azChars = 'abcdefghijklmnopqrstuvwxyz';
-const AZChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const GZChars = 'GHIJKLMNOPQRSTUVWXYZ';
-const hexdigChars = 'ABCDEF';
+const az = 'abcdefghijklmnopqrstuvwxyz';
+const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const GZ = 'GHIJKLMNOPQRSTUVWXYZ';
+const hexdig = 'ABCDEF';
 const digits = '0123456789';
-const allowed = '!"#$%&\'()*+,-./:;=?@[]_~';
-const uriAllowedChars = `${azChars}${hexdigChars}${digits}${allowed}`;
-const sitemapAllowedChars = `${uriAllowedChars}<>`;
-const schemeAllowedChars = `${azChars}${digits}+-.`;
-const percentEncodingAllowedChars = `${digits}${hexdigChars}`;
-const disallowedSitemapChars = '\\^`{|}';
-const disallowedURIChars = `${disallowedSitemapChars}<>`;
-const otherDisallowedChars = '€°éùèàç';
 
-// console.log(checkURI('http://das-küchengeflüster.de./feed'));
+// allowed
+const allowed = '!"#$%&\'()*+,-./:;=?@[]_~';
+const allowedURIChars = `${az}${hexdig}${digits}${allowed}`;
+const allowedSitemapChars = `${allowedURIChars}<>`;
+const domainAllowedChars = `${az}${digits}-`;
+const allowedSchemeChars = `${az}${digits}+-.`;
+const allowedPercentEncodingChars = `${digits}${hexdig}`;
+const allowedUserinfoChars = `${az}${digits}${hexdig}!"$%&'()*+,-.:;=_~`;
+
+// disallowed
+const disallowedSitemapChars = '\\^`{|}';
+const disallowedDomainChars = `${AZ}${allowed.replace('-', '')}`;
+const disallowedURIChars = `${disallowedSitemapChars}<>`;
+const disallowedUserinfoChars = `${GZ}#/?@[]`;
+const disallowedOtherChars = '€°éùèàç §£';
 
 describe('#uri', function() {
   context('when using punycode', function() {
@@ -76,6 +79,7 @@ describe('#uri', function() {
     it('should return a punycode ASCII serialization of the domain if domain is a valid IDN', function() {
       expect(punycode('español.com')).to.be.a('string').and.to.equals('xn--espaol-zwa.com');
       expect(punycode('中文.com')).to.be.a('string').and.to.equals('xn--fiq228c.com');
+      expect(punycode('中文.español.com')).to.be.a('string').and.to.equals('xn--fiq228c.xn--espaol-zwa.com');
     });
 
     it('should return a punycode ASCII serialization of the domain if domain is a valid ASCII FQDN', function() {
@@ -112,6 +116,7 @@ describe('#uri', function() {
     it('should return a Unicode serialization of the domain if domain is a valid IDN serialized', function() {
       expect(punydecode('xn--espaol-zwa.com')).to.be.a('string').and.to.equals('español.com');
       expect(punydecode('xn--fiq228c.com')).to.be.a('string').and.to.equals('中文.com');
+      expect(punydecode('xn--fiq228c.xn--espaol-zwa.com')).to.be.a('string').and.to.equals('中文.español.com');
     });
 
     it('should return a Unicode serialization of the domain if domain is a valid ASCII FQDN', function() {
@@ -329,10 +334,71 @@ describe('#uri', function() {
     });
   });
 
+  context('when using isDomainChar', function() {
+    it('should return true if a char is valid', function() {
+      for (let i = 0; i < domainAllowedChars.length; i += 1) {
+        expect(isDomainChar(domainAllowedChars[i])).to.be.a('boolean').and.to.be.true;
+      }
+    });
+
+    it('should return false if a char does not exist', function() {
+      expect(isDomainChar()).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(null)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(NaN)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is empty', function() {
+      expect(isDomainChar('')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is not a string', function() {
+      expect(isDomainChar([])).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar({})).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(5)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(true)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar(false)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is not allowed', function() {
+      for (let i = 0; i < disallowedSitemapChars.length; i += 1) {
+        expect(isDomainChar(disallowedSitemapChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+      for (let i = 0; i < disallowedURIChars.length; i += 1) {
+        expect(isDomainChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isDomainChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+    });
+
+    it('should not start or end with a hyphen', function() {
+      for (let i = 0; i < az.length; i += 1) {
+        expect(isDomainChar(az[i])).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(az[i], { start: true, end: true })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(az[i], { start: false, end: true })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(az[i], { start: true, end: false })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(az[i], { start: false, end: false })).to.be.a('boolean').and.to.be.true;
+      }
+      for (let i = 0; i < digits.length; i += 1) {
+        expect(isDomainChar(digits[i])).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(digits[i], { start: true, end: true })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(digits[i], { start: false, end: true })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(digits[i], { start: true, end: false })).to.be.a('boolean').and.to.be.true;
+        expect(isDomainChar(digits[i], { start: false, end: false })).to.be.a('boolean').and.to.be.true;
+      }
+      expect(isDomainChar('-', { start: true, end: true })).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar('-', { start: false, end: true })).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar('-', { start: true, end: false })).to.be.a('boolean').and.to.be.false;
+      expect(isDomainChar('-', { start: false, end: false })).to.be.a('boolean').and.to.be.true;
+    });
+  });
+
   context('when using isSitemapChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < sitemapAllowedChars.length; i += 1) {
-        expect(isSitemapChar(sitemapAllowedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedSitemapChars.length; i += 1) {
+        expect(isSitemapChar(allowedSitemapChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
@@ -360,19 +426,19 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedSitemapChars.length; i += 1) {
         expect(isSitemapChar(disallowedSitemapChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < GZChars.length; i += 1) {
-        expect(isSitemapChar(GZChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < GZ.length; i += 1) {
+        expect(isSitemapChar(GZ[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < otherDisallowedChars.length; i += 1) {
-        expect(isSitemapChar(otherDisallowedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isSitemapChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
     });
   });
 
   context('when using isURIChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < uriAllowedChars.length; i += 1) {
-        expect(isURIChar(uriAllowedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedURIChars.length; i += 1) {
+        expect(isURIChar(allowedURIChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
@@ -400,19 +466,19 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedURIChars.length; i += 1) {
         expect(isURIChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < GZChars.length; i += 1) {
-        expect(isURIChar(GZChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < GZ.length; i += 1) {
+        expect(isURIChar(GZ[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < otherDisallowedChars.length; i += 1) {
-        expect(isURIChar(otherDisallowedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isURIChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
     });
   });
 
   context('when using isSchemeChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < schemeAllowedChars.length; i += 1) {
-        expect(isSchemeChar(schemeAllowedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedSchemeChars.length; i += 1) {
+        expect(isSchemeChar(allowedSchemeChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
@@ -440,19 +506,30 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedURIChars.length; i += 1) {
         expect(isSchemeChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < AZChars.length; i += 1) {
-        expect(isSchemeChar(AZChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < AZ.length; i += 1) {
+        expect(isSchemeChar(AZ[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < otherDisallowedChars.length; i += 1) {
-        expect(isSchemeChar(otherDisallowedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isSchemeChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+    });
+
+    it('should start with a letter', function() {
+      for (let i = 0; i < az.length; i += 1) {
+        expect(isSchemeChar(az[i])).to.be.a('boolean').and.to.be.true;
+        expect(isSchemeChar(az[i], { start: true })).to.be.a('boolean').and.to.be.true;
+      }
+      for (let i = 0; i < digits.length; i += 1) {
+        expect(isSchemeChar(digits[i])).to.be.a('boolean').and.to.be.true;
+        expect(isSchemeChar(digits[i], { start: true })).to.be.a('boolean').and.to.be.false;
       }
     });
   });
 
   context('when using isPercentEncodingChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < percentEncodingAllowedChars.length; i += 1) {
-        expect(isPercentEncodingChar(percentEncodingAllowedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedPercentEncodingChars.length; i += 1) {
+        expect(isPercentEncodingChar(allowedPercentEncodingChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
@@ -477,11 +554,11 @@ describe('#uri', function() {
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < azChars.length; i += 1) {
-        expect(isPercentEncodingChar(azChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < az.length; i += 1) {
+        expect(isPercentEncodingChar(az[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < GZChars.length; i += 1) {
-        expect(isPercentEncodingChar(GZChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < GZ.length; i += 1) {
+        expect(isPercentEncodingChar(GZ[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < allowed.length; i += 1) {
         expect(isPercentEncodingChar(allowed[i])).to.be.a('boolean').and.to.be.false;
@@ -489,11 +566,307 @@ describe('#uri', function() {
       for (let i = 0; i < disallowedURIChars.length; i += 1) {
         expect(isPercentEncodingChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
       }
-      for (let i = 0; i < otherDisallowedChars.length; i += 1) {
-        expect(isPercentEncodingChar(otherDisallowedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isPercentEncodingChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
     });
   });
+
+  context('when using isUserinfoChar', function() {
+    it('should return true if a char is valid', function() {
+      for (let i = 0; i < allowedUserinfoChars.length; i += 1) {
+        expect(isUserinfoChar(allowedUserinfoChars[i])).to.be.a('boolean').and.to.be.true;
+      }
+    });
+
+    it('should return false if a char does not exist', function() {
+      expect(isUserinfoChar()).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(null)).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(NaN)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is empty', function() {
+      expect(isUserinfoChar('')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is not a string', function() {
+      expect(isUserinfoChar([])).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar({})).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(5)).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(true)).to.be.a('boolean').and.to.be.false;
+      expect(isUserinfoChar(false)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a char is not allowed', function() {
+      for (let i = 0; i < disallowedUserinfoChars.length; i += 1) {
+        expect(isUserinfoChar(disallowedUserinfoChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+      for (let i = 0; i < disallowedURIChars.length; i += 1) {
+        expect(isUserinfoChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+      for (let i = 0; i < disallowedOtherChars.length; i += 1) {
+        expect(isUserinfoChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
+      }
+    });
+  });
+
+  context('when using isDomainLabel', function() {
+    it('should return true if a label is minimum 1 character and maximum 63', function() {
+      expect(isDomainLabel('a')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('a'.repeat(63))).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return false if a label is less than 1 character and more than 63', function() {
+      expect(isDomainLabel('')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a'.repeat(64))).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a label is not defined', function() {
+      expect(isDomainLabel()).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(null)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(NaN)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a label is not a string', function() {
+      expect(isDomainLabel({})).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel([])).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(true)).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel(5)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return true if a label has lowercase letters, digits or hyphens, start or end with a digit', function() {
+      expect(isDomainLabel('a')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('a2')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('2a2')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('aaaaa')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('1')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('a9999')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('9999a')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('a99-99')).to.be.a('boolean').and.to.be.true;
+      expect(isDomainLabel('9-9-9-9-a')).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return false if a label has other characters than lowercase letters, digits or hyphens', function() {
+      expect(isDomainLabel('a$')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a.2')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('2a"2')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('aa!aaa')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('11111*11111')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a99.99')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('aùéè9')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a label start or end with a hyphen', function() {
+      expect(isDomainLabel('-a')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('-')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('2a2-')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('-aa-aaa-')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('-11-111-11-111')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a99-99-')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('-9')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a label has consecutive hyphens', function() {
+      expect(isDomainLabel('a-b-c--d')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('--')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('2--a')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a--a--a')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('11--111-11-111')).to.be.a('boolean').and.to.be.false;
+      expect(isDomainLabel('a--9999')).to.be.a('boolean').and.to.be.false;
+    });
+  });
+
+  context('when using isDomain', function() {
+    it('should return true if a domain name is localhost', function() {
+      expect(isDomain('localhost')).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain name has minimum 2 labels and is maximum 255 characters', function() {
+      expect(isDomain('g.com')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(63)}`)).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain name ends with . as a root label', function() {
+      expect(isDomain('google.com.')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('a.com.')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('b.com.')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('a.b.c.d.')).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain label starts with xn-- to support IDN', function() {
+      expect(isDomain('xn--fiq228c.com')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('xn--espaol-zwa.com')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('xn--fiq228c.xn--espaol-zwa.com')).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain name has non ASCII characters to support IDN', function() {
+      expect(isDomain('中文.com')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('español.com')).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('中文.español.com')).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain label has already been punycoded', function() {
+      expect(isDomain('xn--fiq228c.com', { punycoded: true })).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('xn--espaol-zwa.com', { punycoded: true })).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('xn--fiq228c.xn--espaol-zwa.com', { punycoded: true })).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return true if a domain label has non ASCII characters and punycoded is false', function() {
+      expect(isDomain('中文.com', { punycoded: false })).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('español.com', { punycoded: false })).to.be.a('boolean').and.to.be.true;
+      expect(isDomain('中文.español.com', { punycoded: false })).to.be.a('boolean').and.to.be.true;
+    });
+
+    it('should return false if a domain name is not defined', function() {
+      expect(isDomain()).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(null)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(NaN)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name is not a string', function() {
+      expect(isDomain({})).to.be.a('boolean').and.to.be.false;
+      expect(isDomain([])).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(true)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(5)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain label was supposed to be punycoded but was not', function() {
+      expect(isDomain('中文.com', { punycoded: true })).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('español.com', { punycoded: true })).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('中文.español.com', { punycoded: true })).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain label does not start with xn--', function() {
+      expect(isDomain('xnn--fiq228c.com')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('an--espaol-zwa.com')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('xn--fiq228c.an--espaol-zwa.com')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name has no label', function() {
+      expect(isDomain('')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name is more than 255 characters', function() {
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(63)}.com`)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name has labels more than 63 characters', function() {
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(64)}.${'c'.repeat(62)}.${'d'.repeat(63)}`)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name has only 1 label or an empty label', function() {
+      expect(isDomain('g')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(' ')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('     ')).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name is less than 1 character and more than 63', function() {
+      expect(isDomain('')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(`${'a'.repeat(64)}.com`)).to.be.a('boolean').and.to.be.false;
+    });
+
+    it('should return false if a domain name has some identical labels', function() {
+      expect(isDomain('a.a.a')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('a.b.b')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('example.com.com')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain('game.develop.game')).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'a'.repeat(63)}`)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(63)}.${'b'.repeat(63)}.${'d'.repeat(63)}`)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(`${'a'.repeat(63)}.${'a'.repeat(63)}.${'b'.repeat(63)}.${'d'.repeat(63)}`)).to.be.a('boolean').and.to.be.false;
+      expect(isDomain(`${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'c'.repeat(63)}`)).to.be.a('boolean').and.to.be.false;
+    });
+  });
+
+  context('when using isIP', function() {
+    it('should return true if a domain name is localhost', function() {
+      expect(isDomain('localhost')).to.be.a('boolean').and.to.be.true;
+    });
+  });
+
+  context('when using checkPercentEncoding', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => checkPercentEncoding()).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(null)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding([])).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(5)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(true)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding(false)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+      expect(() => checkPercentEncoding({})).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_STRING');
+    });
+
+    it('should return an offset at 0 if a string is empty', function() {
+      expect(checkPercentEncoding('')).to.be.a('number').and.to.equals(0);
+    });
+
+    it('should return an offset at 0 if a string is not empty but index is missing', function() {
+      expect(checkPercentEncoding('percent%20encoding')).to.be.a('number').and.to.equals(0);
+    });
+
+    it('should return an offset at 0 if a string is not empty but index is not a number', function() {
+      expect(checkPercentEncoding('percent%20encoding', {})).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', [])).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', 5)).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', true)).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', 'index')).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', new Error('error'))).to.be.a('number').and.to.equals(0);
+    });
+
+    it('should return an offset at 0 if % character is at a bad index', function() {
+      expect(checkPercentEncoding('percent%20encoding', 6)).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', 8)).to.be.a('number').and.to.equals(0);
+    });
+
+    it('should return a correct offset if % character is at the specified index when stringLen is specified', function() {
+      expect(checkPercentEncoding('percent%20encoding', 7, 18)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 7, 21)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 10, 21)).to.be.a('number').and.to.equals(10 + 2);
+    });
+
+    it('should return an offset at 0 if % character is at the specified index but stringLen is less than or equal to index', function() {
+      expect(checkPercentEncoding('percent%20encoding', 7, 2)).to.be.a('number').and.to.equals(0);
+      expect(checkPercentEncoding('percent%20encoding', 7, 7)).to.be.a('number').and.to.equals(0);
+    });
+
+    it('should throw an uri error if % character is at the specified index but stringLen is misused (index or index + 1 length)', function() {
+      expect(() => checkPercentEncoding('percent%20encoding', 7, 8)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+      expect(() => checkPercentEncoding('percent%20encoding', 7, 9)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+    });
+
+    it('should return a correct offset if % character is at the specified index', function() {
+      expect(checkPercentEncoding('percent%20encoding', 7)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 7)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 10)).to.be.a('number').and.to.equals(10 + 2);
+    });
+
+    it('should return a correct offset if % character is at the specified index', function() {
+      expect(checkPercentEncoding('percent%20encoding', 7)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 7)).to.be.a('number').and.to.equals(7 + 2);
+      expect(checkPercentEncoding('percent%C3%BCencoding', 10)).to.be.a('number').and.to.equals(10 + 2);
+    });
+
+    it('should throw an uri error when percent encoding is malformed', function() {
+      expect(() => checkPercentEncoding('percent%2encoding', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%2éncoding', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%2%', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%%%', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%2-encoding', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%encoding', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING_CHAR');
+      expect(() => checkPercentEncoding('percent%', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+      expect(() => checkPercentEncoding('percent%A', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+      expect(() => checkPercentEncoding('percent%9', 7)).to.throw(URIError).with.property('code', 'URI_INVALID_PERCENT_ENCODING');
+    });
+  });
+
+  // console.log(checkURI('http://das-küchengeflüster.de./feed'));
 
   // context('when using checkURISyntax', function() {
   //   it('should throw an uri error when uri is not a string', function() {
