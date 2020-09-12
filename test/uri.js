@@ -5,9 +5,9 @@ const {
     punydecode,
     parseURI,
     isDomainChar,
-    isSitemapEncodedChar,
+    isSitemapToEncodeChar,
     isURIChar,
-    isURIEncodedChar,
+    isURIToEncodeChar,
     isSchemeChar,
     isPercentEncodingChar,
     isUserinfoChar,
@@ -22,6 +22,8 @@ const {
     checkHttpsSitemapURL,
     checkWebURL,
     checkSitemapURL,
+    encodeURIString,
+    decodeURIString,
     encodeSitemapURL,
     encodeWebURL,
     decodeSitemapURL,
@@ -38,8 +40,8 @@ const digits = '0123456789';
 // allowed
 const allowed = '!"#$%&\'()*+,-./:;=?@[]_~';
 const allowedURIChars = `${az}${digits}${allowed}`;
-const allowedURIEncodedChars = `${az}${digits}${hexdig}${allowed}`;
-const allowedSitemapEncodedChars = `${allowedURIChars}${hexdig}<>`;
+const allowedURIToEncodeChars = `${az}${digits}${allowed}`.replace('%', '');;
+const allowedSitemapToEncodeChars = `${allowedURIChars}<>`.replace('%', '');
 const domainAllowedChars = `${az}${digits}-`;
 const allowedSchemeChars = `${az}${digits}+-.`;
 const allowedPercentEncodingChars = `${digits}${hexdig}`;
@@ -47,9 +49,9 @@ const allowedUserinfoChars = `${az}${digits}!"$%&'()*+,-.:;=_~`;
 
 // disallowed
 const disallowed = '\\^`{|}';
-const disallowedSitemapEncodedChars = `${GZ}${disallowed}`;
 const disallowedURIChars = `${AZ}${disallowed}<>`;
-const disallowedURIEncodedChars = `${GZ}${disallowed}<>`;
+const disallowedURIToEncodeChars = `${GZ}${disallowed}<>`;
+const disallowedSitemapToEncodeChars = `${GZ}${disallowed}`;
 const disallowedDomainChars = `${AZ}${allowed.replace('-', '')}`;
 const disallowedSchemeChars = `${disallowedURIChars}${allowed.replace(/[-+.]/g, '')}`;
 const disallowedPercentEncodingChars = `${az}${GZ}${allowed}${disallowed}<>`;
@@ -605,8 +607,8 @@ describe('#uri', function() {
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < disallowedSitemapEncodedChars.length; i += 1) {
-        expect(isDomainChar(disallowedSitemapEncodedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedSitemapToEncodeChars.length; i += 1) {
+        expect(isDomainChar(disallowedSitemapToEncodeChars[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < disallowedURIChars.length; i += 1) {
         expect(isDomainChar(disallowedURIChars[i])).to.be.a('boolean').and.to.be.false;
@@ -638,39 +640,39 @@ describe('#uri', function() {
     });
   });
 
-  context('when using isSitemapEncodedChar', function() {
+  context('when using isSitemapToEncodeChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < allowedSitemapEncodedChars.length; i += 1) {
-        expect(isSitemapEncodedChar(allowedSitemapEncodedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedSitemapToEncodeChars.length; i += 1) {
+        expect(isSitemapToEncodeChar(allowedSitemapToEncodeChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
     it('should return false if a char does not exist', function() {
-      expect(isSitemapEncodedChar()).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(undefined)).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(null)).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(NaN)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar()).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(null)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(NaN)).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is empty', function() {
-      expect(isSitemapEncodedChar('')).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar('')).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is not a string', function() {
-      expect(isSitemapEncodedChar([])).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar({})).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(5)).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(true)).to.be.a('boolean').and.to.be.false;
-      expect(isSitemapEncodedChar(false)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar([])).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar({})).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(5)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(true)).to.be.a('boolean').and.to.be.false;
+      expect(isSitemapToEncodeChar(false)).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < disallowedSitemapEncodedChars.length; i += 1) {
-        expect(isSitemapEncodedChar(disallowedSitemapEncodedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedSitemapToEncodeChars.length; i += 1) {
+        expect(isSitemapToEncodeChar(disallowedSitemapToEncodeChars[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
-        expect(isSitemapEncodedChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
+        expect(isSitemapToEncodeChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
     });
   });
@@ -712,39 +714,39 @@ describe('#uri', function() {
     });
   });
 
-  context('when using isURIEncodedChar', function() {
+  context('when using isURIToEncodeChar', function() {
     it('should return true if a char is valid', function() {
-      for (let i = 0; i < allowedURIEncodedChars.length; i += 1) {
-        expect(isURIEncodedChar(allowedURIEncodedChars[i])).to.be.a('boolean').and.to.be.true;
+      for (let i = 0; i < allowedURIToEncodeChars.length; i += 1) {
+        expect(isURIToEncodeChar(allowedURIToEncodeChars[i])).to.be.a('boolean').and.to.be.true;
       }
     });
 
     it('should return false if a char does not exist', function() {
-      expect(isURIEncodedChar()).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(undefined)).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(null)).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(NaN)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar()).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(undefined)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(null)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(NaN)).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is empty', function() {
-      expect(isURIEncodedChar('')).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar('')).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is not a string', function() {
-      expect(isURIEncodedChar([])).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar({})).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(5)).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(true)).to.be.a('boolean').and.to.be.false;
-      expect(isURIEncodedChar(false)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar([])).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar({})).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(new Error('error'))).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(5)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(true)).to.be.a('boolean').and.to.be.false;
+      expect(isURIToEncodeChar(false)).to.be.a('boolean').and.to.be.false;
     });
 
     it('should return false if a char is not allowed', function() {
-      for (let i = 0; i < disallowedURIEncodedChars.length; i += 1) {
-        expect(isURIEncodedChar(disallowedURIEncodedChars[i])).to.be.a('boolean').and.to.be.false;
+      for (let i = 0; i < disallowedURIToEncodeChars.length; i += 1) {
+        expect(isURIToEncodeChar(disallowedURIToEncodeChars[i])).to.be.a('boolean').and.to.be.false;
       }
       for (let i = 0; i < disallowedOtherChars.length; i += 1) {
-        expect(isURIEncodedChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
+        expect(isURIToEncodeChar(disallowedOtherChars[i])).to.be.a('boolean').and.to.be.false;
       }
     });
   });
