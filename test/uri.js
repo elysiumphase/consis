@@ -22,7 +22,9 @@ const {
     checkHttpsSitemapURL,
     checkWebURL,
     checkSitemapURL,
+    encodeURIComponentString,
     encodeURIString,
+    decodeURIComponentString,
     decodeURIString,
     encodeWebURL,
     encodeSitemapURL,
@@ -61,7 +63,6 @@ const disallowedOtherChars = '€°éùèàç §£';
 const uri = [
   'urn:isbn',
   'ftp://example.com',
-  ':',
   'f:',
   'f://',
   'f:///path',
@@ -75,6 +76,7 @@ const noUri = [
   new Error('error'),
   '',
   '       ',
+  ':',
   ' http: example.com',
   `${'a'.repeat(64)}.com`,
   `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(63)}.com`,
@@ -191,6 +193,10 @@ const idn = [
   'http://español.com',
   'http://中文.com',
   'https://中文.com:8042/over/there?name=ferret&amp;pseudo=superhero#nose',
+];
+
+const noidn = [
+  'http://user:pass@xn--iñvalid.com:8080',
 ];
 
 const sitemap = [
@@ -502,8 +508,20 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'nose');
     });
 
-    it('should return an object and the authority and host attributes with the Punycode ASCII serialization value + authorityPunydecoded and hostPunydecoded with the original Unicode serialization value', function() {
+    it('should return an object with the authority and host attributes with the Punycode ASCII serialization value + authorityPunydecoded and hostPunydecoded with the original Unicode serialization value', function() {
       let parsedURI = parseURI('foo://中文.com:8042/over/there?name=ferret#nose');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', 'xn--fiq228c.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', '中文.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', 'xn--fiq228c.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', '中文.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', 8042);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'nose');
+
+      parsedURI = parseURI('foo://xn--fiq228c.com:8042/over/there?name=ferret#nose');
       expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'foo');
       expect(parsedURI).to.be.an('object').and.to.have.property('authority', 'xn--fiq228c.com:8042');
       expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', '中文.com:8042');
@@ -1139,7 +1157,7 @@ describe('#uri', function() {
     });
 
     it('should throw an uri error when uri has no scheme', function() {
-      // scheme cannot be an empty string followinf parseURI behavior
+      // scheme cannot be an empty string following parseURI behavior
       expect(() => checkURISyntax('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkURISyntax('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkURISyntax(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
@@ -1216,7 +1234,7 @@ describe('#uri', function() {
     });
 
     it('should throw an uri error when uri has no scheme', function() {
-      // scheme cannot be an empty string followinf parseURI behavior
+      // scheme cannot be an empty string following parseURI behavior
       expect(() => checkURI('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkURI('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkURI(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
@@ -1402,7 +1420,7 @@ describe('#uri', function() {
     });
 
     it('should throw an uri error when uri has no scheme', function() {
-      // scheme cannot be an empty string followinf parseURI behavior
+      // scheme cannot be an empty string following parseURI behavior
       expect(() => checkHttpURL('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkHttpURL('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => checkHttpURL(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
@@ -2104,155 +2122,427 @@ describe('#uri', function() {
     });
   });
 
-  context('when using encodeURIString', function() {
+  context('when using encodeURIComponentString', function() {
     it('should return an empty string when uri is not a string', function() {
-      expect(encodeURIString()).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(undefined)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(null)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(NaN)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString([])).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(new Error('error'))).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(5)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(true)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString(false)).to.be.a('string').and.to.equals('');
-      expect(encodeURIString({})).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString()).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(undefined)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(null)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(NaN)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString([])).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(new Error('error'))).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(5)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(true)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString(false)).to.be.a('string').and.to.equals('');
+      expect(encodeURIComponentString({})).to.be.a('string').and.to.equals('');
     });
 
     it('should return a lowercased string', function() {
-      expect(encodeURIString('ABCDEF')).to.be.a('string').and.to.equals('abcdef');
-      expect(encodeURIString('ABcDEF')).to.be.a('string').and.to.equals('abcdef');
-      expect(encodeURIString('aBcDEF')).to.be.a('string').and.to.equals('abcdef');
-      expect(encodeURIString('aBcDEf')).to.be.a('string').and.to.equals('abcdef');
-      expect(encodeURIString('abcdef')).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('ABCDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('ABcDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('aBcDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('aBcDEf')).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('abcdef')).to.be.a('string').and.to.equals('abcdef');
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
-      expect(encodeURIString(az)).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(digits)).to.be.a('string').and.to.equals(digits);
-      expect(encodeURIString(allowed.replace('%', ''))).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+      expect(encodeURIComponentString(az)).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(digits)).to.be.a('string').and.to.equals(digits);
+      expect(encodeURIComponentString(allowed.replace('%', ''))).to.be.a('string').and.to.equals(allowed.replace('%', ''));
 
-      expect(encodeURIString(az, { sitemap: false })).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(digits, { sitemap: false })).to.be.a('string').and.to.equals(digits);
-      expect(encodeURIString(allowed.replace('%', ''), { sitemap: false })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+      expect(encodeURIComponentString(az, { sitemap: false })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(digits, { sitemap: false })).to.be.a('string').and.to.equals(digits);
+      expect(encodeURIComponentString(allowed.replace('%', ''), { sitemap: false })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
     });
 
     it('should return a string with the exact same characters if allowed and to not be escaped when sitemap is true', function() {
       const unescaped = allowed.replace(/[%&'"]/g, '');
 
-      expect(encodeURIString(az, { sitemap: true })).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(digits, { sitemap: true })).to.be.a('string').and.to.equals(digits);
-      expect(encodeURIString(unescaped, { sitemap: true })).to.be.a('string').and.to.equals(unescaped);
-      expect(encodeURIString('<>', { sitemap: true })).to.be.a('string').and.to.equals('&lt;&gt;');
+      expect(encodeURIComponentString(az, { sitemap: true })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(digits, { sitemap: true })).to.be.a('string').and.to.equals(digits);
+      expect(encodeURIComponentString(unescaped, { sitemap: true })).to.be.a('string').and.to.equals(unescaped);
+      expect(encodeURIComponentString('<>', { sitemap: true })).to.be.a('string').and.to.equals('&lt;&gt;');
     });
 
     it('should return a string with percent encoded characters if not allowed, by default', function() {
-      expect(encodeURIString(AZ)).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(disallowed)).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
-      expect(encodeURIString('<>')).to.be.a('string').and.to.equals('%3C%3E');
-      expect(encodeURIString(disallowedOtherChars)).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+      expect(encodeURIComponentString(AZ)).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(disallowed)).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
+      expect(encodeURIComponentString('<>')).to.be.a('string').and.to.equals('%3C%3E');
+      expect(encodeURIComponentString(disallowedOtherChars)).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
 
-      expect(encodeURIString(AZ, { sitemap: false })).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(disallowed, { sitemap: false })).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
-      expect(encodeURIString('<>', { sitemap: false })).to.be.a('string').and.to.equals('%3C%3E');
-      expect(encodeURIString(disallowedOtherChars, { sitemap: false })).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+      expect(encodeURIComponentString(AZ, { sitemap: false })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(disallowed, { sitemap: false })).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
+      expect(encodeURIComponentString('<>', { sitemap: false })).to.be.a('string').and.to.equals('%3C%3E');
+      expect(encodeURIComponentString(disallowedOtherChars, { sitemap: false })).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
     });
 
     it('should return a string with percent encoded characters if not allowed when sitemap is true', function() {
-      expect(encodeURIString(AZ, { sitemap: true })).to.be.a('string').and.to.equals(az);
-      expect(encodeURIString(disallowed, { sitemap: true })).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
-      expect(encodeURIString('<>', { sitemap: true })).to.be.a('string').and.to.equals('&lt;&gt;');
-      expect(encodeURIString(disallowedOtherChars, { sitemap: true })).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+      expect(encodeURIComponentString(AZ, { sitemap: true })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(disallowed, { sitemap: true })).to.be.a('string').and.to.equals('%5C%5E%60%7B%7C%7D');
+      expect(encodeURIComponentString('<>', { sitemap: true })).to.be.a('string').and.to.equals('&lt;&gt;');
+      expect(encodeURIComponentString(disallowedOtherChars, { sitemap: true })).to.be.a('string').and.to.equals('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
     });
 
     it('should return a string with escaped characters when sitemap is true', function() {
-      expect(encodeURIString('&\'"<>', { sitemap: true })).to.be.a('string').and.to.equals('&amp;&apos;&quot;&lt;&gt;');
-      expect(encodeURIString('&\'"', { sitemap: false })).to.be.a('string').and.to.equals('&\'"');
-      expect(encodeURIString('<>', { sitemap: false })).to.be.a('string').and.to.equals('%3C%3E');
+      expect(encodeURIComponentString('&\'"<>', { sitemap: true })).to.be.a('string').and.to.equals('&amp;&apos;&quot;&lt;&gt;');
+      expect(encodeURIComponentString('&\'"', { sitemap: false })).to.be.a('string').and.to.equals('&\'"');
+      expect(encodeURIComponentString('<>', { sitemap: false })).to.be.a('string').and.to.equals('%3C%3E');
     });
   });
 
-  context('when using decodeURIString', function() {
-    it('should return an empty string when uri is not a string', function() {
-      expect(decodeURIString()).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(undefined)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(null)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(NaN)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString([])).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(new Error('error'))).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(5)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(true)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString(false)).to.be.a('string').and.to.equals('');
-      expect(decodeURIString({})).to.be.a('string').and.to.equals('');
+  context('when using encodeURIString that uses checkURISyntax and encodeURIComponentString', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => encodeURIString()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeURIString({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
     });
 
-    it('should not return a lowercased string', function() {
-      expect(decodeURIString('ABCDEF')).to.be.a('string').and.to.not.equals('abcdef');
-      expect(decodeURIString('ABcDEF')).to.be.a('string').and.to.not.equals('abcdef');
-      expect(decodeURIString('aBcDEF')).to.be.a('string').and.to.not.equals('abcdef');
-      expect(decodeURIString('aBcDEf')).to.be.a('string').and.to.not.equals('abcdef');
-      expect(decodeURIString('abcdef')).to.be.a('string').and.to.equals('abcdef');
-      expect(decodeURIString(AZ)).to.be.a('string').and.to.equals(AZ);
+    it('should throw an uri error when uri has no scheme', function() {
+      // scheme cannot be an empty string following parseURI behavior
+      expect(() => encodeURIString('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => encodeURIString('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => encodeURIString(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    it('should throw an uri error when scheme has invalid chars', function() {
+      expect(() => encodeURIString('htép://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => encodeURIString('ht°p://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+    });
+
+    it('should throw an uri error if scheme is not http or https when option is web or sitemap', function() {
+      expect(() => encodeURIString('httpp://www.example.com', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('httpp://www.example.com', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('httpp://www.example.com', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('httpp://www.example.com', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+
+      expect(() => encodeURIString('htp://www.example.com', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('htp://www.example.com', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('htp://www.example.com', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('htp://www.example.com', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should not throw an uri error if scheme is not http or https when option is not web or sitemap', function() {
+      expect(() => encodeURIString('httpp://www.example.com')).to.not.throw();
+      expect(() => encodeURIString('httpp://www.example.com', { web: false })).to.not.throw();
+      expect(() => encodeURIString('httpp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('httpp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('httpp://www.example.com', { sitemap: false })).to.not.throw();
+
+      expect(() => encodeURIString('htp://www.example.com')).to.not.throw();
+      expect(() => encodeURIString('htp://www.example.com', { web: false })).to.not.throw();
+      expect(() => encodeURIString('htp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('htp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('htp://www.example.com', { sitemap: false })).to.not.throw();
+    });
+
+    it('should throw an uri error if host to encode is not valid', function() {
+      expect(() => encodeURIString('http://xn--iñvalid.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+    });
+
+    it('should throw an uri error if port to encode is not valid', function() {
+      expect(() => encodeURIString('http://example.com:80g80')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should throw an uri error if authority is null and option is web or sitemap', function() {
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: true, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+    });
+
+    it('should not throw an uri error if authority is null and option is not web or sitemap', function() {
+      expect(() => encodeURIString('https:isbn:0-486-27557-4')).to.not.throw();
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => encodeURIString('http:isbn:0-486-27557-4', { web: false })).to.not.throw();
+      expect(() => encodeURIString('https:isbn:0-486-27557-4', { sitemap: false })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has letters in uppercase', function() {
+      expect(() => encodeURIString('http://example.com/OVER/there')).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/there')).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there')).to.not.throw();
+      expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there')).to.not.throw();
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+
+      expect(() => encodeURIString('http://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+
+      expect(() => encodeURIString('http://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has special sitemap characters', function() {
+      expect(() => encodeURIString('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+
+      expect(() => encodeURIString('http://example.com/OVER/<there>', { web: false })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/<there', { web: false })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there>', { web: false })).to.not.throw();
+
+      expect(() => encodeURIString('http://example.com/OVER/<there>', { web: false })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/<there', { web: false })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there>', { web: false })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has special sitemap characters when sitemap is true', function() {
+      expect(() => encodeURIString('http://example.com/OVER/<there>', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/<there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there>', { sitemap: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has no special sitemap characters', function() {
+      expect(() => encodeURIString('ftp://EXAMPLE.com/OVER/th"ere')).to.not.throw();
+      expect(() => encodeURIString('ftp://EXAMPLE.com/OVER/\'there')).to.not.throw();
+      expect(() => encodeURIString('ftp://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
+      expect(() => encodeURIString('ftp://EXAMPLE.com/OVER/t[here&')).to.not.throw();
+
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th"ere', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/\'there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th"ere?q=11', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th[ere&', { web: true })).to.not.throw();
+
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th"ere', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/\'there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th"ere?q=11', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/th[ere&', { sitemap: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has invalid characters that should be percent encoded whether web or sitemap is true or not', function() {
+      expect(() => encodeURIString('ftp://user:pass@example.com/path{')).to.not.throw();
+      expect(() => encodeURIString('ftp://user:pass@example.com/path{')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/over/t}ere')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/over|there')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/over/there')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/over/thère')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/over/there€')).to.not.throw();
+      expect(() => encodeURIString('ftp://example.com/oveùr/there')).to.not.throw();
+
+      expect(() => encodeURIString('http://user:pass@example.com/path{', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://user:pass@example.com/path{', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/t}ere', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over|there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/there', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/thère', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/there€', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/oveùr/there', { web: true })).to.not.throw();
+
+      expect(() => encodeURIString('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/t}ere', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over|there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/thère', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/over/there€', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/oveùr/there', { sitemap: true })).to.not.throw();
+    });
+
+    it('should return a lowercased uri', function() {
+      expect(encodeURIString('FTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('ftp://www.example.com.');
+      expect(encodeURIString('HTTP://WWW.EXAMPLE.COM.', { web: true })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(encodeURIString('HTTP://WWW.EXAMPLE.COM.', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.com.');
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
-      expect(decodeURIString(az)).to.be.a('string').and.to.equals(az);
-      expect(decodeURIString(digits)).to.be.a('string').and.to.equals(digits);
-      expect(decodeURIString(allowed.replace('%', ''))).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+      expect(encodeURIString(`urn:isbn:0-486-27557-4/${az}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${az}`);
+      expect(encodeURIString(`urn:isbn:0-486-27557-4/${digits}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${digits}`);
+      expect(encodeURIString(`urn:isbn:0-486-27557-4/${allowed.replace('%', '')}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${allowed.replace('%', '')}`);
 
-      expect(decodeURIString(az, { sitemap: false })).to.be.a('string').and.to.equals(az);
-      expect(decodeURIString(digits, { sitemap: false })).to.be.a('string').and.to.equals(digits);
-      expect(decodeURIString(allowed.replace('%', ''), { sitemap: false })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+      expect(encodeURIString(`http://example.com/${az}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${digits}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(encodeURIString(`http://example.com/${allowed.replace('%', '')}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+
+      expect(encodeURIString(`http://example.com/${az}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${digits}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(encodeURIString(`http://example.com/${allowed.replace('%', '')}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+    });
+
+    it('should return a string with the exact same characters if allowed and to not be escaped when sitemap is true', function() {
+      const unescaped = allowed.replace(/[%&'"]/g, '');
+
+      expect(encodeURIString(`http://example.com/${az}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${digits}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(encodeURIString(`http://example.com/${unescaped}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${unescaped}`);
+      expect(encodeURIString('http://example.com/<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
+    });
+
+    it('should return a string with percent encoded characters if not allowed, by default', function() {
+      expect(encodeURIString(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${disallowed}`)).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
+      expect(encodeURIString('http://example.com/<>')).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
+      expect(encodeURIString(`http://example.com/${disallowedOtherChars}`)).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+
+      expect(encodeURIString(`http://example.com/${AZ}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${disallowed}`, { web: false })).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
+      expect(encodeURIString('http://example.com/<>', { web: false })).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
+      expect(encodeURIString(`http://example.com/${disallowedOtherChars}`, { web: false })).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+
+      expect(encodeURIString(`http://example.com/${AZ}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${disallowed}`, { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
+      expect(encodeURIString('http://example.com/<>', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
+      expect(encodeURIString(`http://example.com/${disallowedOtherChars}`, { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+    });
+
+    it('should return a string with percent encoded characters if not allowed when sitemap is true', function() {
+      expect(encodeURIString(`http://example.com/${AZ}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeURIString(`http://example.com/${disallowed}`, { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
+      expect(encodeURIString('http://example.com/<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
+      expect(encodeURIString(`http://example.com/${disallowedOtherChars}`, { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+    });
+
+    it('should return a string with escaped characters when sitemap is true', function() {
+      expect(encodeURIString('http://example.com/&\'"<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&amp;&apos;&quot;&lt;&gt;');
+      expect(encodeURIString('http://example.com/&\'"', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/&\'"');
+      expect(encodeURIString('http://example.com/<>', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
+    });
+
+    it('should return the expected uri encoded string with the punycoded host', function() {
+      expect(encodeURIString('ftp://exèmple.com:8080')).to.be.a('string').and.to.equals('ftp://xn--exmple-4ua.com:8080');
+      expect(encodeURIString('ftp://exèmple.com/pâth')).to.be.a('string').and.to.equals('ftp://xn--exmple-4ua.com/p%C3%A2th');
+      expect(encodeURIString('ftp://中文.com.')).to.be.a('string').and.to.equals('ftp://xn--fiq228c.com.');
+
+      expect(encodeURIString('http://exèmple.com:8080', { web: true })).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com:8080');
+      expect(encodeURIString('http://exèmple.com/pâth', { web: true })).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com/p%C3%A2th');
+      expect(encodeURIString('http://中文.com.', { web: true })).to.be.a('string').and.to.equals('http://xn--fiq228c.com.');
+
+      expect(encodeURIString('http://exèmple.com:8080', { sitemap: true })).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com:8080');
+      expect(encodeURIString('http://exèmple.com/pâth', { sitemap: true })).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com/p%C3%A2th');
+      expect(encodeURIString('http://中文.com.', { sitemap: true })).to.be.a('string').and.to.equals('http://xn--fiq228c.com.');
+    });
+
+    it('should return the expected uri encoded string with the userinfo encoded', function() {
+      expect(encodeURIString('ftp://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('ftp://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeURIString('http://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeURIString('http://usèr:pass@example.com/')).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
+    });
+
+    it('should return the expected uri encoded string with userinfo encoded and escaped chars when sitemap is true', function() {
+      expect(encodeURIString('http://us<e>r:pâss@exèmple.com:8080/pâth<>', { sitemap: true })).to.be.a('string').and.to.equals('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th&lt;&gt;');
+      expect(encodeURIString('http://us<e>r:pâss@exèmple.com:8080/pâth', { sitemap: true })).to.be.a('string').and.to.equals('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeURIString('http://us\'r:pa"ss@example.com/', { sitemap: true })).to.be.a('string').and.to.equals('http://us&apos;r:pa&quot;ss@example.com/');
+    });
+
+    it('should not return an uri with scheme or authority having invalid or escaped characters', function() {
+      expect(encodeURIString('http://exèmple.com')).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com');
+      expect(() => encodeURIString('htèp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => encodeURIString('http://ex%20mple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+      expect(() => encodeURIString('ht%tp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+    });
+
+    it('should return the expected uri encoded string', function() {
+      expect(encodeURIString('foo://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('foo://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeURIString('foo://user:pa$$@example.com/')).to.be.a('string').and.to.equals('foo://user:pa$$@example.com/');
+      expect(encodeURIString('foo://usèr:pass@example.com/')).to.be.a('string').and.to.equals('foo://us%C3%A8r:pass@example.com/');
+      expect(encodeURIString('foo://example.com/pâth')).to.be.a('string').and.to.equals('foo://example.com/p%C3%A2th');
+
+      expect(encodeURIString('http://user:pâss@exèmple.com:8080/pâth', { sitemap: true })).to.be.a('string').and.to.equals('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeURIString('http://user:pa$$@example.com/', { sitemap: true })).to.be.a('string').and.to.equals('http://user:pa$$@example.com/');
+      expect(encodeURIString('http://usèr:pass@example.com/', { sitemap: true })).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
+      expect(encodeURIString('http://example.com/pâth', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/p%C3%A2th');
+
+      expect(encodeURIString('http://example.com/there?a=5&b=11', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/there?a=5&amp;b=11');
+    });
+  });
+
+  context('when using decodeURIComponentString', function() {
+    it('should return an empty string when uri is not a string', function() {
+      expect(decodeURIComponentString()).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(undefined)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(null)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(NaN)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString([])).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(new Error('error'))).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(5)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(true)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString(false)).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString({})).to.be.a('string').and.to.equals('');
+    });
+
+    it('should return a lowercased string', function() {
+      expect(decodeURIComponentString('ABCDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString('ABcDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString('aBcDEF')).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString('aBcDEf')).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString('abcdef')).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString(AZ)).to.be.a('string').and.to.equals(az);
+    });
+
+    it('should return a string with the exact same characters if allowed, by default', function() {
+      expect(decodeURIComponentString(az)).to.be.a('string').and.to.equals(az);
+      expect(decodeURIComponentString(digits)).to.be.a('string').and.to.equals(digits);
+      expect(decodeURIComponentString(allowed.replace('%', ''))).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+
+      expect(decodeURIComponentString(az, { sitemap: false })).to.be.a('string').and.to.equals(az);
+      expect(decodeURIComponentString(digits, { sitemap: false })).to.be.a('string').and.to.equals(digits);
+      expect(decodeURIComponentString(allowed.replace('%', ''), { sitemap: false })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
     });
 
     it('should return a string with the exact same characters if allowed when sitemap is true', function() {
       const unescaped = allowed.replace(/[%&'"]/g, '');
 
-      expect(decodeURIString(az, { sitemap: true })).to.be.a('string').and.to.equals(az);
-      expect(decodeURIString(digits, { sitemap: true })).to.be.a('string').and.to.equals(digits);
-      expect(decodeURIString(allowed.replace('%', ''), { sitemap: true })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
-      expect(decodeURIString('<>', { sitemap: true })).to.be.a('string').and.to.equals('<>');
+      expect(decodeURIComponentString(az, { sitemap: true })).to.be.a('string').and.to.equals(az);
+      expect(decodeURIComponentString(digits, { sitemap: true })).to.be.a('string').and.to.equals(digits);
+      expect(decodeURIComponentString(allowed.replace('%', ''), { sitemap: true })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+      expect(decodeURIComponentString('<>', { sitemap: true })).to.be.a('string').and.to.equals('<>');
     });
 
     it('should return an empty string if percent encoded characters are wrong whether sitemap option is true or false', function() {
-      expect(decodeURIString('%')).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%A')).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%20%%A')).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%20%9')).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%')).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%A')).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%20%%A')).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%20%9')).to.be.a('string').and.to.equals('');
 
-      expect(decodeURIString('%', { sitemap: false })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%A', { sitemap: false })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%20%%At', { sitemap: false })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%20%9', { sitemap: false })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%', { sitemap: false })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%A', { sitemap: false })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%20%%At', { sitemap: false })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%20%9', { sitemap: false })).to.be.a('string').and.to.equals('');
 
-      expect(decodeURIString('%', { sitemap: true })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%A', { sitemap: true })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('%20%%Yx', { sitemap: true })).to.be.a('string').and.to.equals('');
-      expect(decodeURIString('a%20%9', { sitemap: true })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%', { sitemap: true })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%A', { sitemap: true })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('%20%%Yx', { sitemap: true })).to.be.a('string').and.to.equals('');
+      expect(decodeURIComponentString('a%20%9', { sitemap: true })).to.be.a('string').and.to.equals('');
     });
 
     it('should return a string with percent encoded characters decoded whether sitemap option is true or false', function() {
-      expect(decodeURIString('%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(disallowed);
-      expect(decodeURIString('%3C%3E')).to.be.a('string').and.to.equals('<>');
-      expect(decodeURIString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(disallowedOtherChars);
+      expect(decodeURIComponentString('%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(disallowed);
+      expect(decodeURIComponentString('%3C%3E')).to.be.a('string').and.to.equals('<>');
+      expect(decodeURIComponentString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(disallowedOtherChars);
 
-      expect(decodeURIString('%5C%5E%60%7B%7C%7D', { sitemap: false })).to.be.a('string').and.to.equals(disallowed);
-      expect(decodeURIString('%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('<>');
-      expect(decodeURIString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: false })).to.be.a('string').and.to.equals(disallowedOtherChars);
+      expect(decodeURIComponentString('%5C%5E%60%7B%7C%7D', { sitemap: false })).to.be.a('string').and.to.equals(disallowed);
+      expect(decodeURIComponentString('%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('<>');
+      expect(decodeURIComponentString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: false })).to.be.a('string').and.to.equals(disallowedOtherChars);
 
-      expect(decodeURIString('%5C%5E%60%7B%7C%7D', { sitemap: true })).to.be.a('string').and.to.equals(disallowed);
-      expect(decodeURIString('%3C%3E', { sitemap: true })).to.be.a('string').and.to.equals('<>');
-      expect(decodeURIString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: true })).to.be.a('string').and.to.equals(disallowedOtherChars);
+      expect(decodeURIComponentString('%5C%5E%60%7B%7C%7D', { sitemap: true })).to.be.a('string').and.to.equals(disallowed);
+      expect(decodeURIComponentString('%3C%3E', { sitemap: true })).to.be.a('string').and.to.equals('<>');
+      expect(decodeURIComponentString('%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: true })).to.be.a('string').and.to.equals(disallowedOtherChars);
     });
 
     it('should return a string with unescaped characters when sitemap is true', function() {
-      expect(decodeURIString('&amp;&apos;&quot;&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('&\'"<>');
-      expect(decodeURIString('http://www.example.co.jp/&lt;it&apos;s%20there&gt;?name=thx&amp;pseudo=superhero#anchor', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.co.jp/<it\'s there>?name=thx&pseudo=superhero#anchor');
-      expect(decodeURIString('&\'"', { sitemap: false })).to.be.a('string').and.to.equals('&\'"');
-      expect(decodeURIString('%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('<>');
+      expect(decodeURIComponentString('&amp;&apos;&quot;&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('&\'"<>');
+      expect(decodeURIComponentString('http://www.example.co.jp/&lt;it&apos;s%20there&gt;?name=thx&amp;pseudo=superhero#anchor', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.co.jp/<it\'s there>?name=thx&pseudo=superhero#anchor');
+      expect(decodeURIComponentString('&\'"', { sitemap: false })).to.be.a('string').and.to.equals('&\'"');
+      expect(decodeURIComponentString('%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('<>');
     });
   });
 
-  context('when using encodeWebURL that uses checkURISyntax and encodeURIString', function() {
+  context('when using encodeWebURL that uses encodeURIString with web option to true', function() {
     it('should throw an uri error when uri is not a string', function() {
       expect(() => encodeWebURL()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
       expect(() => encodeWebURL(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
@@ -2267,7 +2557,7 @@ describe('#uri', function() {
     });
 
     it('should throw an uri error when uri has no scheme', function() {
-      // scheme cannot be an empty string followinf parseURI behavior
+      // scheme cannot be an empty string following parseURI behavior
       expect(() => encodeWebURL('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => encodeWebURL('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
       expect(() => encodeWebURL(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
@@ -2297,28 +2587,12 @@ describe('#uri', function() {
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
-
-      expect(() => encodeWebURL('http://example.com/OVER/there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('HTTP://example.com/OVER/there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://USER:PASS@example.com/OVER/there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { sitemap: true })).to.not.throw();
     });
 
     it('should not throw an uri error if uri to encode has special sitemap characters', function() {
       expect(() => encodeWebURL('http://example.com/OVER/<there>')).to.not.throw();
       expect(() => encodeWebURL('HTTP://example.com/OVER/<there')).to.not.throw();
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there>')).to.not.throw();
-
-      expect(() => encodeWebURL('http://example.com/OVER/<there>', { sitemap: false })).to.not.throw();
-      expect(() => encodeWebURL('HTTP://example.com/OVER/<there', { sitemap: false })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there>', { sitemap: false })).to.not.throw();
-    });
-
-    it('should not throw an uri error if uri to encode has special sitemap characters when sitemap is true', function() {
-      expect(() => encodeWebURL('http://example.com/OVER/<there>', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('HTTP://example.com/OVER/<there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there>', { sitemap: true })).to.not.throw();
     });
 
     it('should not throw an uri error if uri to encode has no special sitemap characters', function() {
@@ -2326,14 +2600,9 @@ describe('#uri', function() {
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/\'there')).to.not.throw();
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/t[here&')).to.not.throw();
-
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/th"ere', { sitemap: false })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/\'there', { sitemap: false })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/th"ere?q=11', { sitemap: false })).to.not.throw();
-      expect(() => encodeWebURL('http://EXAMPLE.com/OVER/th[ere&', { sitemap: false })).to.not.throw();
     });
 
-    it('should not throw an uri error if uri to encode has invalid sitemap characters that should be percent encoded whether sitemap is true or not', function() {
+    it('should not throw an uri error if uri to encode has invalid characters that should be percent encoded', function() {
       expect(() => encodeWebURL('http://user:pass@example.com/path{')).to.not.throw();
       expect(() => encodeWebURL('http://user:pass@example.com/path{')).to.not.throw();
       expect(() => encodeWebURL('http://example.com/over/t}ere')).to.not.throw();
@@ -2342,63 +2611,23 @@ describe('#uri', function() {
       expect(() => encodeWebURL('http://example.com/over/thère')).to.not.throw();
       expect(() => encodeWebURL('http://example.com/over/there€')).to.not.throw();
       expect(() => encodeWebURL('http://example.com/oveùr/there')).to.not.throw();
-
-      expect(() => encodeWebURL('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/over/t}ere', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/over|there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/over/there', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/over/thère', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/over/there€', { sitemap: true })).to.not.throw();
-      expect(() => encodeWebURL('http://example.com/oveùr/there', { sitemap: true })).to.not.throw();
     });
 
     it('should return a lowercased url', function() {
       expect(encodeWebURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
     });
 
-    it('should return a string with the exact same characters if allowed, by default', function() {
+    it('should return a string with the exact same characters if allowed', function() {
       expect(encodeWebURL(`http://example.com/${az}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
       expect(encodeWebURL(`http://example.com/${digits}`)).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
       expect(encodeWebURL(`http://example.com/${allowed.replace('%', '')}`)).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
-
-      expect(encodeWebURL(`http://example.com/${az}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
-      expect(encodeWebURL(`http://example.com/${digits}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
-      expect(encodeWebURL(`http://example.com/${allowed.replace('%', '')}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
     });
 
-    it('should return a string with the exact same characters if allowed and to not be escaped when sitemap is true', function() {
-      const unescaped = allowed.replace(/[%&'"]/g, '');
-
-      expect(encodeWebURL(`http://example.com/${az}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
-      expect(encodeWebURL(`http://example.com/${digits}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
-      expect(encodeWebURL(`http://example.com/${unescaped}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${unescaped}`);
-      expect(encodeWebURL('http://example.com/<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
-    });
-
-    it('should return a string with percent encoded characters if not allowed, by default', function() {
+    it('should return a string with percent encoded characters if not allowed', function() {
       expect(encodeWebURL(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
       expect(encodeWebURL(`http://example.com/${disallowed}`)).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
       expect(encodeWebURL('http://example.com/<>')).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
       expect(encodeWebURL(`http://example.com/${disallowedOtherChars}`)).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
-
-      expect(encodeWebURL(`http://example.com/${AZ}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
-      expect(encodeWebURL(`http://example.com/${disallowed}`, { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
-      expect(encodeWebURL('http://example.com/<>', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
-      expect(encodeWebURL(`http://example.com/${disallowedOtherChars}`, { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
-    });
-
-    it('should return a string with percent encoded characters if not allowed when sitemap is true', function() {
-      expect(encodeWebURL(`http://example.com/${AZ}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
-      expect(encodeWebURL(`http://example.com/${disallowed}`, { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
-      expect(encodeWebURL('http://example.com/<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
-      expect(encodeWebURL(`http://example.com/${disallowedOtherChars}`, { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
-    });
-
-    it('should return a string with escaped characters when sitemap is true', function() {
-      expect(encodeWebURL('http://example.com/&\'"<>', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&amp;&apos;&quot;&lt;&gt;');
-      expect(encodeWebURL('http://example.com/&\'"', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/&\'"');
-      expect(encodeWebURL('http://example.com/<>', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/%3C%3E');
     });
 
     it('should return the expected url encoded string with the punycoded host', function() {
@@ -2410,11 +2639,6 @@ describe('#uri', function() {
     it('should return the expected url encoded string with the userinfo encoded', function() {
       expect(encodeWebURL('http://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
       expect(encodeWebURL('http://usèr:pass@example.com/')).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
-    });
-
-    it('should return the expected url encoded string with userinfo encoded and escaped chars when sitemap is true', function() {
-      expect(encodeWebURL('http://us<e>r:pâss@exèmple.com:8080/pâth', { sitemap: true })).to.be.a('string').and.to.equals('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
-      expect(encodeWebURL('http://us\'r:pa"ss@example.com/', { sitemap: true })).to.be.a('string').and.to.equals('http://us&apos;r:pa&quot;ss@example.com/');
     });
 
     it('should not return an url with scheme or authority having invalid or escaped characters', function() {
@@ -2429,11 +2653,737 @@ describe('#uri', function() {
       expect(encodeWebURL('http://user:pa$$@example.com/')).to.be.a('string').and.to.equals('http://user:pa$$@example.com/');
       expect(encodeWebURL('http://usèr:pass@example.com/')).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
       expect(encodeWebURL('http://example.com/pâth')).to.be.a('string').and.to.equals('http://example.com/p%C3%A2th');
+    });
+  });
 
-      expect(encodeWebURL('http://example.com/there?a=5&b=11', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/there?a=5&amp;b=11');
+  context('when using encodeSitemapURL that uses encodeURIString with sitemap option to true', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => encodeSitemapURL()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => encodeSitemapURL({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
     });
 
-    // encodeURI will never return an invalid character that would not have been percent encoded
-    //
+    it('should throw an uri error when uri has no scheme', function() {
+      // scheme cannot be an empty string following parseURI behavior
+      expect(() => encodeSitemapURL('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => encodeSitemapURL('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => encodeSitemapURL(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    it('should throw an uri error if scheme is not http or https', function() {
+      expect(() => encodeSitemapURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeSitemapURL('htp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should throw an uri error if host to encode is not valid', function() {
+      expect(() => encodeSitemapURL('http://xn--iñvalid.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+    });
+
+    it('should throw an uri error if port to encode is not valid', function() {
+      expect(() => encodeSitemapURL('http://example.com:80g80')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should throw an uri error if authority is null', function() {
+      expect(() => encodeSitemapURL('http:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => encodeSitemapURL('https:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+    });
+
+    it('should not throw an uri error if uri to encode has letters in uppercase', function() {
+      expect(() => encodeSitemapURL('http://example.com/OVER/there')).to.not.throw();
+      expect(() => encodeSitemapURL('HTTP://example.com/OVER/there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
+      expect(() => encodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has special sitemap characters', function() {
+      expect(() => encodeSitemapURL('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => encodeSitemapURL('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has no special sitemap characters', function() {
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/th"ere')).to.not.throw();
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/\'there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
+      expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/t[here&')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to encode has invalid characters that should be percent encoded', function() {
+      expect(() => encodeSitemapURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => encodeSitemapURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/over/t}ere')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/over|there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/over/there')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/over/thère')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/over/there€')).to.not.throw();
+      expect(() => encodeSitemapURL('http://example.com/oveùr/there')).to.not.throw();
+    });
+
+    it('should return a lowercased url', function() {
+      expect(encodeSitemapURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return a string with the exact same characters if allowed and to not be escaped', function() {
+      const unescaped = allowed.replace(/[%&'"]/g, '');
+
+      expect(encodeSitemapURL(`http://example.com/${az}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeSitemapURL(`http://example.com/${digits}`)).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(encodeSitemapURL(`http://example.com/${unescaped}`)).to.be.a('string').and.to.equals(`http://example.com/${unescaped}`);
+      expect(encodeSitemapURL('http://example.com/<>')).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
+    });
+
+    it('should return a string with percent encoded characters if not allowed', function() {
+      expect(encodeSitemapURL(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(encodeSitemapURL(`http://example.com/${disallowed}`)).to.be.a('string').and.to.equals('http://example.com/%5C%5E%60%7B%7C%7D');
+      expect(encodeSitemapURL('http://example.com/<>')).to.be.a('string').and.to.equals('http://example.com/&lt;&gt;');
+      expect(encodeSitemapURL(`http://example.com/${disallowedOtherChars}`)).to.be.a('string').and.to.equals('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3');
+    });
+
+    it('should return a string with escaped characters', function() {
+      expect(encodeSitemapURL('http://example.com/&\'"<>')).to.be.a('string').and.to.equals('http://example.com/&amp;&apos;&quot;&lt;&gt;');
+    });
+
+    it('should return the expected url encoded string with the punycoded host', function() {
+      expect(encodeSitemapURL('http://exèmple.com:8080')).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com:8080');
+      expect(encodeSitemapURL('http://exèmple.com/pâth')).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com/p%C3%A2th');
+      expect(encodeSitemapURL('http://中文.com.')).to.be.a('string').and.to.equals('http://xn--fiq228c.com.');
+    });
+
+    it('should return the expected url encoded string with the userinfo encoded', function() {
+      expect(encodeSitemapURL('http://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeSitemapURL('http://usèr:pass@example.com/')).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
+    });
+
+    it('should return the expected url encoded string with userinfo encoded and escaped chars', function() {
+      expect(encodeSitemapURL('http://us<e>r:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeSitemapURL('http://us\'r:pa"ss@example.com/')).to.be.a('string').and.to.equals('http://us&apos;r:pa&quot;ss@example.com/');
+    });
+
+    it('should not return an url with scheme or authority having invalid or escaped characters', function() {
+      expect(encodeSitemapURL('http://exèmple.com')).to.be.a('string').and.to.equals('http://xn--exmple-4ua.com');
+      expect(() => encodeSitemapURL('htèp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeSitemapURL('http://ex%20mple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+      expect(() => encodeSitemapURL('ht%tp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should return the expected url encoded string', function() {
+      expect(encodeSitemapURL('http://user:pâss@exèmple.com:8080/pâth')).to.be.a('string').and.to.equals('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th');
+      expect(encodeSitemapURL('http://user:pa$$@example.com/')).to.be.a('string').and.to.equals('http://user:pa$$@example.com/');
+      expect(encodeSitemapURL('http://usèr:pass@example.com/')).to.be.a('string').and.to.equals('http://us%C3%A8r:pass@example.com/');
+      expect(encodeSitemapURL('http://example.com/pâth')).to.be.a('string').and.to.equals('http://example.com/p%C3%A2th');
+      expect(encodeSitemapURL('http://example.com/there?a=5&b=11')).to.be.a('string').and.to.equals('http://example.com/there?a=5&amp;b=11');
+    });
   });
+
+  context('when using decodeURIString that uses checkURISyntax and decodeURIComponentString', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => decodeURIString()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeURIString({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+    });
+
+    it('should throw an uri error when uri has no scheme', function() {
+      // scheme cannot be an empty string following parseURI behavior
+      expect(() => decodeURIString('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeURIString('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeURIString(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    it('should throw an uri error when scheme has invalid chars', function() {
+      expect(() => decodeURIString('htép://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => decodeURIString('ht°p://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+    });
+
+    it('should throw an uri error if scheme is not http or https when option is web or sitemap', function() {
+      expect(() => decodeURIString('httpp://www.example.com', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('httpp://www.example.com', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('httpp://www.example.com', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('httpp://www.example.com', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+
+      expect(() => decodeURIString('htp://www.example.com', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('htp://www.example.com', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('htp://www.example.com', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('htp://www.example.com', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should not throw an uri error if scheme is not http or https when option is not web or sitemap', function() {
+      expect(() => decodeURIString('httpp://www.example.com')).to.not.throw();
+      expect(() => decodeURIString('httpp://www.example.com', { web: false })).to.not.throw();
+      expect(() => decodeURIString('httpp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('httpp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('httpp://www.example.com', { sitemap: false })).to.not.throw();
+
+      expect(() => decodeURIString('htp://www.example.com')).to.not.throw();
+      expect(() => decodeURIString('htp://www.example.com', { web: false })).to.not.throw();
+      expect(() => decodeURIString('htp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('htp://www.example.com', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('htp://www.example.com', { sitemap: false })).to.not.throw();
+    });
+
+    it('should throw an uri error if host to decode is not valid', function() {
+      expect(() => decodeURIString('http://xn--iñvalid.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+    });
+
+    it('should throw an uri error if port to decode is not valid', function() {
+      expect(() => decodeURIString('http://example.com:80g80')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should throw an uri error if authority is null and option is web or sitemap', function() {
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: true, sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { web: true, sitemap: false })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { sitemap: true })).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+    });
+
+    it('should not throw an uri error if authority is null and option is not web or sitemap', function() {
+      expect(() => decodeURIString('https:isbn:0-486-27557-4')).to.not.throw();
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { web: false, sitemap: false })).to.not.throw();
+      expect(() => decodeURIString('http:isbn:0-486-27557-4', { web: false })).to.not.throw();
+      expect(() => decodeURIString('https:isbn:0-486-27557-4', { sitemap: false })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has letters in uppercase', function() {
+      expect(() => decodeURIString('http://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there')).to.not.throw();
+      expect(() => decodeURIString('http://USER:PASS@example.com/OVER/there')).to.not.throw();
+      expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+
+      expect(() => decodeURIString('http://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+
+      expect(() => decodeURIString('http://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has special sitemap characters', function() {
+      expect(() => decodeURIString('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+
+      expect(() => decodeURIString('http://example.com/OVER/<there>', { web: false })).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/<there', { web: false })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there>', { web: false })).to.not.throw();
+
+      expect(() => decodeURIString('http://example.com/OVER/<there>', { web: false })).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/<there', { web: false })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there>', { web: false })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has special sitemap characters when sitemap is true', function() {
+      expect(() => decodeURIString('http://example.com/OVER/<there>', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('HTTP://example.com/OVER/<there', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/there>', { sitemap: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has no special sitemap characters', function() {
+      expect(() => decodeURIString('ftp://EXAMPLE.com/OVER/th"ere')).to.not.throw();
+      expect(() => decodeURIString('ftp://EXAMPLE.com/OVER/\'there')).to.not.throw();
+      expect(() => decodeURIString('ftp://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
+      expect(() => decodeURIString('ftp://EXAMPLE.com/OVER/t[here&')).to.not.throw();
+
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th"ere', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/\'there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th"ere?q=11', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th[ere&', { web: true })).to.not.throw();
+
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th"ere', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/\'there', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th"ere?q=11', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://EXAMPLE.com/OVER/th[ere&', { sitemap: true })).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has invalid characters that should be percent encoded whether web or sitemap is true or not', function() {
+      expect(() => decodeURIString('ftp://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeURIString('ftp://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/over/t}ere')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/over|there')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/over/there')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/over/thère')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/over/there€')).to.not.throw();
+      expect(() => decodeURIString('ftp://example.com/oveùr/there')).to.not.throw();
+
+      expect(() => decodeURIString('http://user:pass@example.com/path{', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://user:pass@example.com/path{', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/t}ere', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over|there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/there', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/thère', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/there€', { web: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/oveùr/there', { web: true })).to.not.throw();
+
+      expect(() => decodeURIString('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://user:pass@example.com/path{', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/t}ere', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over|there', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/there', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/thère', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/over/there€', { sitemap: true })).to.not.throw();
+      expect(() => decodeURIString('http://example.com/oveùr/there', { sitemap: true })).to.not.throw();
+    });
+
+    it('should return a lowercased uri', function() {
+      expect(decodeURIString('FTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('ftp://www.example.com.');
+      expect(decodeURIString('HTTP://WWW.EXAMPLE.COM.', { web: true })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(decodeURIString('HTTP://WWW.EXAMPLE.COM.', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return a string with the exact same characters if allowed, by default', function() {
+      expect(decodeURIString(`urn:isbn:0-486-27557-4/${az}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${az}`);
+      expect(decodeURIString(`urn:isbn:0-486-27557-4/${digits}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${digits}`);
+      expect(decodeURIString(`urn:isbn:0-486-27557-4/${allowed.replace('%', '')}`)).to.be.a('string').and.to.equals(`urn:isbn:0-486-27557-4/${allowed.replace('%', '')}`);
+
+      expect(decodeURIString(`http://example.com/${az}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString(`http://example.com/${digits}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeURIString(`http://example.com/${allowed.replace('%', '')}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+
+      expect(decodeURIString(`http://example.com/${az}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString(`http://example.com/${digits}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeURIString(`http://example.com/${allowed.replace('%', '')}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+    });
+
+    it('should return a string with the exact same characters if allowed and to not be escaped when sitemap is true', function() {
+      const unescaped = allowed.replace(/[%&'"]/g, '');
+
+      expect(decodeURIString(`http://example.com/${az}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString(`http://example.com/${digits}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeURIString(`http://example.com/${unescaped}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${unescaped}`);
+      expect(decodeURIString('http://example.com/&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/<>');
+    });
+
+    it('should return a string with percent decoded characters, by default', function() {
+      expect(decodeURIString(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString('http://example.com/%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeURIString('http://example.com/%3C%3E')).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeURIString('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+
+      expect(decodeURIString(`http://example.com/${AZ}`, { web: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString('http://example.com/%5C%5E%60%7B%7C%7D', { web: false })).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeURIString('http://example.com/%3C%3E', { web: false })).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeURIString('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { web: false })).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+
+      expect(decodeURIString(`http://example.com/${AZ}`, { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString('http://example.com/%5C%5E%60%7B%7C%7D', { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeURIString('http://example.com/%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeURIString('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: false })).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+    });
+
+    it('should return a string with percent decoded characters if not allowed when sitemap is true', function() {
+      expect(decodeURIString(`http://example.com/${AZ}`, { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeURIString('http://example.com/%5C%5E%60%7B%7C%7D', { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeURIString('http://example.com/&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeURIString('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3', { sitemap: true })).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+    });
+
+    it('should return a string with unescaped characters when sitemap is true', function() {
+      expect(decodeURIString('http://example.com/&amp;&apos;&quot;&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/&\'"<>');
+      expect(decodeURIString('http://example.com/&\'"', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/&\'"');
+      expect(decodeURIString('http://example.com/%3C%3E', { sitemap: false })).to.be.a('string').and.to.equals('http://example.com/<>');
+    });
+
+    it('should return the expected uri decoded string with the punydecoded host', function() {
+      expect(decodeURIString('ftp://xn--exmple-4ua.com:8080')).to.be.a('string').and.to.equals('ftp://exèmple.com:8080');
+      expect(decodeURIString('ftp://exèmple.com:8080')).to.be.a('string').and.to.equals('ftp://exèmple.com:8080');
+      expect(decodeURIString('ftp://xn--exmple-4ua.com/p%C3%A2th')).to.be.a('string').and.to.equals('ftp://exèmple.com/pâth');
+      expect(decodeURIString('ftp://xn--fiq228c.com.')).to.be.a('string').and.to.equals('ftp://中文.com.');
+
+      expect(decodeURIString('http://xn--exmple-4ua.com:8080', { web: true })).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeURIString('http://xn--exmple-4ua.com/p%C3%A2th', { web: true })).to.be.a('string').and.to.equals('http://exèmple.com/pâth');
+      expect(decodeURIString('http://xn--fiq228c.com.', { web: true })).to.be.a('string').and.to.equals('http://中文.com.');
+
+      expect(decodeURIString('http://xn--exmple-4ua.com:8080', { sitemap: true })).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeURIString('http://xn--exmple-4ua.com/p%C3%A2th', { sitemap: true })).to.be.a('string').and.to.equals('http://exèmple.com/pâth');
+      expect(decodeURIString('http://xn--fiq228c.com.', { sitemap: true })).to.be.a('string').and.to.equals('http://中文.com.');
+    });
+
+    it('should return the expected uri decoded string with the userinfo decoded', function() {
+      expect(decodeURIString('ftp://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('ftp://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeURIString('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('http://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeURIString('http://us%C3%A8r:pass@example.com/')).to.be.a('string').and.to.equals('http://usèr:pass@example.com/');
+    });
+
+    it('should return the expected uri decoded string with userinfo decoded and unescaped chars when sitemap is true', function() {
+      expect(decodeURIString('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th&lt;&gt;', { sitemap: true })).to.be.a('string').and.to.equals('http://us<e>r:pâss@exèmple.com:8080/pâth<>');
+      expect(decodeURIString('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th', { sitemap: true })).to.be.a('string').and.to.equals('http://us<e>r:pâss@exèmple.com:8080/pâth');
+      expect(decodeURIString('http://us&apos;r:pa&quot;ss@example.com/', { sitemap: true })).to.be.a('string').and.to.equals('http://us\'r:pa"ss@example.com/');
+    });
+
+    it('should not return an uri with scheme or authority having invalid or escaped characters', function() {
+      expect(decodeURIString('http://xn--exmple-4ua.com')).to.be.a('string').and.to.equals('http://exèmple.com');
+      expect(() => decodeURIString('htèp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => decodeURIString('http://ex%20mple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+      expect(() => decodeURIString('ht%tp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+    });
+
+    it('should return the expected uri decoded string', function() {
+      expect(decodeURIString('foo://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('foo://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeURIString('foo://user:pa$$@example.com/')).to.be.a('string').and.to.equals('foo://user:pa$$@example.com/');
+      expect(decodeURIString('foo://us%C3%A8r:pass@example.com/')).to.be.a('string').and.to.equals('foo://usèr:pass@example.com/');
+      expect(decodeURIString('foo://example.com/p%C3%A2th')).to.be.a('string').and.to.equals('foo://example.com/pâth');
+      expect(decodeURIString('foo://example.com/p%C3%A2th?a=1&b=2#11')).to.be.a('string').and.to.equals('foo://example.com/pâth?a=1&b=2#11');
+      expect(decodeURIString('foo://example.com/%C3%A2th?a=1&b=2')).to.be.a('string').and.to.equals('foo://example.com/âth?a=1&b=2');
+
+      expect(decodeURIString('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th', { web: true })).to.be.a('string').and.to.equals('http://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeURIString('http://user:pa$$@example.com/', { web: true })).to.be.a('string').and.to.equals('http://user:pa$$@example.com/');
+      expect(decodeURIString('http://us%C3%A8r:pass@example.com/', { web: true })).to.be.a('string').and.to.equals('http://usèr:pass@example.com/');
+      expect(decodeURIString('http://example.com/p%C3%A2th', { web: true })).to.be.a('string').and.to.equals('http://example.com/pâth');
+      expect(decodeURIString('https://example.com/p%C3%A2th?%C3%A2=5', { web: true })).to.be.a('string').and.to.equals('https://example.com/pâth?â=5');
+      expect(decodeURIString('https://example.com/p%C3%A2th?%C3%A2=5#11', { web: true })).to.be.a('string').and.to.equals('https://example.com/pâth?â=5#11');
+
+      expect(decodeURIString('http://example.com/there?a=5&amp;b=11', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/there?a=5&b=11');
+      expect(decodeURIString('http://example.com/there?a=5&amp;b=11#anc%20hor', { sitemap: true })).to.be.a('string').and.to.equals('http://example.com/there?a=5&b=11#anc hor');
+    });
+  });
+
+  context('when using decodeWebURL that is an alias for decodeURIString with web option to true', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => decodeWebURL()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeWebURL({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+    });
+
+    it('should throw an uri error when url has no scheme', function() {
+      // scheme cannot be an empty string following parseURI behavior
+      expect(() => decodeWebURL('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeWebURL('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeWebURL(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    it('should throw an uri error when scheme has invalid chars', function() {
+      expect(() => decodeWebURL('htép://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('ht°p://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should throw an uri error if scheme is not http or https', function() {
+      expect(() => decodeWebURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should throw an uri error if host to decode is not valid', function() {
+      expect(() => decodeWebURL('http://xn--iñvalid.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+    });
+
+    it('should throw an uri error if port to decode is not valid', function() {
+      expect(() => decodeWebURL('http://example.com:80g80')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should throw an uri error if authority is null', function() {
+      expect(() => decodeWebURL('http:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+      expect(() => decodeWebURL('https:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+    });
+
+    it('should not throw an uri error if uri to decode has letters in uppercase', function() {
+      expect(() => decodeWebURL('http://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeWebURL('HTTP://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
+      expect(() => decodeWebURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
+      expect(() => decodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has special sitemap characters', function() {
+      expect(() => decodeWebURL('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => decodeWebURL('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has no special sitemap characters', function() {
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/th"ere')).to.not.throw();
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/\'there')).to.not.throw();
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
+      expect(() => decodeWebURL('http://EXAMPLE.com/OVER/t[here&')).to.not.throw();
+    });
+
+    it('should not throw an uri error if uri to decode has invalid characters that should be percent encoded', function() {
+      expect(() => decodeWebURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeWebURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/over/t}ere')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/over|there')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/over/there')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/over/thère')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/over/there€')).to.not.throw();
+      expect(() => decodeWebURL('http://example.com/oveùr/there')).to.not.throw();
+    });
+
+    it('should return a lowercased url', function() {
+      expect(decodeWebURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return a string with the exact same characters if allowed', function() {
+      expect(decodeWebURL(`http://example.com/${az}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeWebURL(`http://example.com/${digits}`)).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeWebURL(`http://example.com/${allowed.replace('%', '')}`)).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+    });
+
+    it('should return a string with percent decoded characters', function() {
+      expect(decodeWebURL(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeWebURL('http://example.com/%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeWebURL('http://example.com/%3C%3E')).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeWebURL('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+    });
+
+    it('should return the expected url decoded string with the punydecoded host', function() {
+      expect(decodeWebURL('http://exèmple.com:8080')).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeWebURL('http://xn--exmple-4ua.com:8080', { web: true })).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeWebURL('http://xn--exmple-4ua.com/p%C3%A2th', { web: true })).to.be.a('string').and.to.equals('http://exèmple.com/pâth');
+      expect(decodeWebURL('http://xn--fiq228c.com.', { web: true })).to.be.a('string').and.to.equals('http://中文.com.');
+    });
+
+    it('should return the expected url decoded string with the userinfo decoded', function() {
+      expect(decodeWebURL('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('http://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeWebURL('http://us%C3%A8r:pass@example.com/')).to.be.a('string').and.to.equals('http://usèr:pass@example.com/');
+    });
+
+    it('should not return an uri with scheme or authority having invalid or escaped characters', function() {
+      expect(decodeWebURL('http://xn--exmple-4ua.com')).to.be.a('string').and.to.equals('http://exèmple.com');
+      expect(() => decodeWebURL('htèp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('http://ex%20mple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+      expect(() => decodeWebURL('ht%tp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should return the expected uri decoded string', function() {
+      expect(decodeWebURL('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('http://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeWebURL('http://user:pa$$@example.com/')).to.be.a('string').and.to.equals('http://user:pa$$@example.com/');
+      expect(decodeWebURL('http://us%C3%A8r:pass@example.com/')).to.be.a('string').and.to.equals('http://usèr:pass@example.com/');
+      expect(decodeWebURL('http://example.com/p%C3%A2th')).to.be.a('string').and.to.equals('http://example.com/pâth');
+      expect(decodeWebURL('https://example.com/p%C3%A2th?%C3%A2=5')).to.be.a('string').and.to.equals('https://example.com/pâth?â=5');
+      expect(decodeWebURL('https://example.com/p%C3%A2th?%C3%A2=5#11')).to.be.a('string').and.to.equals('https://example.com/pâth?â=5#11');
+    });
+  });
+
+  context('when using decodeSitemapURL that is an alias for decodeURIString with sitemap option to true', function() {
+    it('should throw an uri error when uri is not a string', function() {
+      expect(() => decodeSitemapURL()).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(undefined)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(null)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(NaN)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL([])).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(new Error('error'))).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(5)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(true)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL(false)).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+      expect(() => decodeSitemapURL({})).to.throw(URIError).with.property('code', 'URI_INVALID_TYPE');
+    });
+
+    it('should throw an uri error when url has no scheme', function() {
+      // scheme cannot be an empty string following parseURI behavior
+      expect(() => decodeSitemapURL('/Users/dir/file.js')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeSitemapURL('://example.com')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+      expect(() => decodeSitemapURL(':')).to.throw(URIError).with.property('code', 'URI_MISSING_SCHEME');
+    });
+
+    it('should throw an uri error when scheme has invalid chars', function() {
+      expect(() => decodeSitemapURL('htép://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeSitemapURL('ht°p://example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should throw an uri error if scheme is not http or https', function() {
+      expect(() => decodeSitemapURL('httpp://www.example.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should throw an uri error if host to decode is not valid', function() {
+      expect(() => decodeSitemapURL('http://xn--iñvalid.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+    });
+
+    it('should throw an uri error if port to decode is not valid', function() {
+      expect(() => decodeSitemapURL('http://example.com:80g80')).to.throw(URIError).with.property('code', 'URI_INVALID_PORT');
+    });
+
+    it('should throw an uri error if authority is null', function() {
+      expect(() => decodeSitemapURL('http:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
+    });
+
+    it('should not throw an uri error if url to decode has letters in uppercase', function() {
+      expect(() => decodeSitemapURL('http://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeSitemapURL('HTTP://example.com/OVER/there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
+      expect(() => decodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should not throw an uri error if url to decode has special sitemap characters', function() {
+      expect(() => decodeSitemapURL('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => decodeSitemapURL('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+    });
+
+    it('should not throw an uri error if url to decode has special sitemap characters', function() {
+      expect(() => decodeSitemapURL('http://example.com/OVER/<there>')).to.not.throw();
+      expect(() => decodeSitemapURL('HTTP://example.com/OVER/<there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/there>')).to.not.throw();
+    });
+
+    it('should not throw an uri error if url to decode has no special sitemap characters', function() {
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/th"ere')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/\'there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/th"ere?q=11')).to.not.throw();
+      expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/t[here&')).to.not.throw();
+    });
+
+    it('should not throw an uri error if url to decode has invalid characters that should be percent encoded', function() {
+      expect(() => decodeSitemapURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeSitemapURL('http://user:pass@example.com/path{')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/over/t}ere')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/over|there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/over/there')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/over/thère')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/over/there€')).to.not.throw();
+      expect(() => decodeSitemapURL('http://example.com/oveùr/there')).to.not.throw();
+    });
+
+    it('should return a lowercased url', function() {
+      expect(decodeSitemapURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return a string with the exact same characters if allowed', function() {
+      expect(decodeSitemapURL(`http://example.com/${az}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeSitemapURL(`http://example.com/${digits}`)).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeSitemapURL(`http://example.com/${allowed.replace('%', '')}`)).to.be.a('string').and.to.equals(`http://example.com/${allowed.replace('%', '')}`);
+    });
+
+    it('should return a string with the exact same characters if allowed and to not be escaped', function() {
+      const unescaped = allowed.replace(/[%&'"]/g, '');
+
+      expect(decodeSitemapURL(`http://example.com/${az}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeSitemapURL(`http://example.com/${digits}`)).to.be.a('string').and.to.equals(`http://example.com/${digits}`);
+      expect(decodeSitemapURL(`http://example.com/${unescaped}`)).to.be.a('string').and.to.equals(`http://example.com/${unescaped}`);
+      expect(decodeSitemapURL('http://example.com/&lt;&gt;')).to.be.a('string').and.to.equals('http://example.com/<>');
+    });
+
+    it('should return a string with percent decoded characters', function() {
+      expect(decodeSitemapURL(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeSitemapURL('http://example.com/%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeSitemapURL('http://example.com/%3C%3E')).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeSitemapURL('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+    });
+
+    it('should return a string with percent decoded characters if not allowed', function() {
+      expect(decodeSitemapURL(`http://example.com/${AZ}`)).to.be.a('string').and.to.equals(`http://example.com/${az}`);
+      expect(decodeSitemapURL('http://example.com/%5C%5E%60%7B%7C%7D')).to.be.a('string').and.to.equals(`http://example.com/${disallowed}`);
+      expect(decodeSitemapURL('http://example.com/&lt;&gt;')).to.be.a('string').and.to.equals('http://example.com/<>');
+      expect(decodeSitemapURL('http://example.com/%E2%82%AC%C2%B0%C3%A9%C3%B9%C3%A8%C3%A0%C3%A7%20%C2%A7%C2%A3')).to.be.a('string').and.to.equals(`http://example.com/${disallowedOtherChars}`);
+    });
+
+    it('should return a string with unescaped characters', function() {
+      expect(decodeSitemapURL('http://example.com/&amp;&apos;&quot;&lt;&gt;')).to.be.a('string').and.to.equals('http://example.com/&\'"<>');
+    });
+
+    it('should return the expected url decoded string with the punydecoded host', function() {
+      expect(decodeSitemapURL('http://exèmple.com:8080')).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeSitemapURL('http://xn--exmple-4ua.com:8080')).to.be.a('string').and.to.equals('http://exèmple.com:8080');
+      expect(decodeSitemapURL('http://xn--exmple-4ua.com/p%C3%A2th')).to.be.a('string').and.to.equals('http://exèmple.com/pâth');
+      expect(decodeSitemapURL('http://xn--fiq228c.com.')).to.be.a('string').and.to.equals('http://中文.com.');
+    });
+
+    it('should return the expected url decoded string with the userinfo decoded', function() {
+      expect(decodeSitemapURL('http://user:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('http://user:pâss@exèmple.com:8080/pâth');
+      expect(decodeSitemapURL('http://us%C3%A8r:pass@example.com/')).to.be.a('string').and.to.equals('http://usèr:pass@example.com/');
+    });
+
+    it('should return the expected url decoded string with userinfo decoded and unescaped chars', function() {
+      expect(decodeSitemapURL('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th&lt;&gt;')).to.be.a('string').and.to.equals('http://us<e>r:pâss@exèmple.com:8080/pâth<>');
+      expect(decodeSitemapURL('http://us&lt;e&gt;r:p%C3%A2ss@xn--exmple-4ua.com:8080/p%C3%A2th')).to.be.a('string').and.to.equals('http://us<e>r:pâss@exèmple.com:8080/pâth');
+      expect(decodeSitemapURL('http://us&apos;r:pa&quot;ss@example.com/')).to.be.a('string').and.to.equals('http://us\'r:pa"ss@example.com/');
+    });
+
+    it('should not return an url with scheme or authority having invalid or escaped characters', function() {
+      expect(decodeSitemapURL('http://xn--exmple-4ua.com')).to.be.a('string').and.to.equals('http://exèmple.com');
+      expect(() => decodeSitemapURL('htèp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeSitemapURL('http://ex%20mple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_HOST');
+      expect(() => decodeSitemapURL('ht%tp://exèmple.com')).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+    });
+
+    it('should return the expected uri decoded string', function() {
+      expect(decodeSitemapURL('http://example.com/there?a=5&amp;b=11')).to.be.a('string').and.to.equals('http://example.com/there?a=5&b=11');
+      expect(decodeSitemapURL('http://example.com/there?a=5&amp;b=11#anc%20hor')).to.be.a('string').and.to.equals('http://example.com/there?a=5&b=11#anc hor');
+    });
+  });
+
+  context('when using decodeURIString with encodeURIString', function() {
+    it('should return the exact same string ignoring case', function() {
+      uri.forEach((string) => {
+        expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+    });
+  });
+
+  context('when using decodeWebURL with encodeWebURL', function() {
+    it('should return the exact same string ignoring case', function() {
+      http.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      https.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+    });
+  });
+
+  context('when using decodeWebURL with encodeWebURL', function() {
+    it('should return the exact same string ignoring case', function() {
+      http.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      https.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      idn.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+    });
+  });
+
+  context('when using decodeSitemapURL with encodeSitemapURL', function() {
+    it('should return the exact same string ignoring case', function() {
+      sitemap.forEach((string) => {
+        expect(decodeSitemapURL(encodeSitemapURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+    });
+  });
+
+  // ajouter urls de tests dans les tableaux
+  // test valid web urls
+  // test invalid web urls
+  // test valid uris
+  // test invalid uris
+  // test valid sitemap urls
+  // test invalid sitemap urls
+
+  // doc + logo + publish node-uri
 });
