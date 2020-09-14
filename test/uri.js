@@ -62,13 +62,16 @@ const disallowedOtherChars = '€°éùèàç §£';
 
 const uri = [
   'urn:isbn',
+  'urn:isbn:0-486-27557-4',
   'ftp://example.com',
   'f:',
   'f://',
   'f:///path',
+  'http:',
+  'http::',
 ];
 
-const noUri = [
+const notUri = [
   {},
   [],
   255,
@@ -82,9 +85,7 @@ const noUri = [
   `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(63)}.com`,
   '/Users/dir/file.js',
   '://example.com',
-  'http:',
   ':',
-  's://',
   'éè://test:80',
   's://s.s.',
   'foo://foo.foo',
@@ -150,6 +151,8 @@ const http = [
   'http://example.com:8042/it"s%20over/there?name=ferret#nose',
   'http://example.com:8042/over/there?name=ferret&pseudo=superhero#nose',
   'http://username:password@www.example.com:80/path/to/file.php?foo=316&bar=this+has+spaces#anchor',
+  'http://das-küchengeflüster.de/feed',
+  'http://www.foo.bar./',
 ];
 
 const notHttp = [
@@ -160,6 +163,11 @@ const notHttp = [
   'https://example.com:8042/over/there?name=ferret#nose',
   'http:isbn:0-486-27557-4',
   'http:///path',
+  'http://https://www.facebook.com/sunnybens',
+  'http://-',
+  'http://a.b--c.de/',
+  'http:',
+  'http::',
 ];
 
 const https = [
@@ -187,6 +195,10 @@ const notHttps = [
   'http://example.com:8042/over/there?name=ferret#nose',
   'https:isbn:0-486-27557-4',
   'https:///path',
+  'https://https://www.facebook.com/sunnybens',
+  'https://shop.delacier.com;hu.shop.delacier.com/products.json',
+  'https:',
+  'https::',
 ];
 
 const idn = [
@@ -195,12 +207,12 @@ const idn = [
   'https://中文.com:8042/over/there?name=ferret&amp;pseudo=superhero#nose',
 ];
 
-const noidn = [
+const notIdn = [
   'http://user:pass@xn--iñvalid.com:8080',
 ];
 
 const sitemap = [
-  'http://user:pass@example.com./over/there?page=5&x=1#coin',
+  'http://user:pass@example.com./over/there?page=5&amp;x=1#coin',
   'https://中文.com:8042/over/there?name=ferret&amp;pseudo=superhero#nose',
   'http://example.com:8042/over/there?name=ferret&amp;pseudo=superhero#nose',
   'http://example.com:8042/it&apos;sover/there?name=ferret#nose',
@@ -209,7 +221,7 @@ const sitemap = [
   'http://example.com:8042/&amp;sover/&gt;there&lt;?name=ferret#nose',
 ];
 
-const noSitemap = [
+const notSitemap = [
   'http://user:pass@example.com./over/there?page=5&x=1#coin',
   'https://中文.com:8042/over/there?name=ferret&pseudo=superhero#nose',
   'http://example.com:8042/over/there%20%20%?name=ferret#nose',
@@ -3373,6 +3385,98 @@ describe('#uri', function() {
     it('should return the exact same string ignoring case', function() {
       sitemap.forEach((string) => {
         expect(decodeSitemapURL(encodeSitemapURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+    });
+  });
+
+  context('when using checkURI', function() {
+    it('should not throw if the uri is valid', function() {
+      uri.forEach((string) => {
+        expect(() => checkURI(string)).to.not.throw();
+      });
+    });
+
+    it('should not throw if the http url is valid', function() {
+      http.forEach((string) => {
+        expect(() => checkURI(string)).to.not.throw();
+      });
+    });
+
+    it('should not throw if the https url is valid', function() {
+      https.forEach((string) => {
+        expect(() => checkURI(string)).to.not.throw();
+      });
+    });
+
+    it('should not throw if the sitemap url is valid', function() {
+      sitemap.forEach((string) => {
+        expect(() => checkURI(string)).to.not.throw();
+      });
+    });
+
+    it('should not throw if the idn url is valid', function() {
+      idn.forEach((string) => {
+        expect(() => checkURI(string)).to.not.throw();
+      });
+    });
+
+    it('should throw an uri error if the uri is not valid', function() {
+      notUri.forEach((string) => {
+        expect(() => checkURI(string)).to.throw(URIError);
+      });
+    });
+  });
+
+  context('when using checkWebURL', function() {
+    it('should not throw if the url is valid', function() {
+      http.forEach((string) => {
+        expect(() => checkWebURL(string)).to.not.throw();
+      });
+
+      https.forEach((string) => {
+        expect(() => checkWebURL(string)).to.not.throw();
+      });
+    });
+  });
+
+  context('when using checkHttpURL', function() {
+    it('should not throw if the url is valid', function() {
+      http.forEach((string) => {
+        expect(() => checkHttpURL(string)).to.not.throw();
+      });
+    });
+
+    it('should throw an uri error if the url is not valid', function() {
+      notHttp.forEach((string) => {
+        expect(() => checkHttpURL(string)).to.throw(URIError);
+      });
+    });
+  });
+
+  context('when using checkHttpsURL', function() {
+    it('should not throw if the url is valid', function() {
+      https.forEach((string) => {
+        expect(() => checkHttpsURL(string)).to.not.throw();
+      });
+    });
+
+    it('should throw an uri error if the url is not valid', function() {
+      notHttps.forEach((string) => {
+        expect(() => checkHttpsURL(string)).to.throw(URIError);
+      });
+    });
+  });
+
+  context('when using checkSitemapURL', function() {
+    it('should not throw if the url is valid', function() {
+      sitemap.forEach((string) => {
+        expect(() => checkSitemapURL(string)).to.not.throw();
+      });
+    });
+
+    it('should throw an uri error if the url is not valid', function() {
+      notSitemap.forEach((string) => {
+        expect(() => checkSitemapURL(string)).to.throw(URIError);
       });
     });
   });
