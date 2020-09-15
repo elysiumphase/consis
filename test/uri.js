@@ -41,8 +41,8 @@ const digits = '0123456789';
 
 // allowed
 const allowed = '!"#$%&\'()*+,-./:;=?@[]_~';
-const allowedURIChars = `${az}${digits}${allowed}`;
-const allowedURIToEncodeChars = allowedURIChars.replace('%', '');;
+const allowedURIChars = `${az}${AZ}${digits}${allowed}`;
+const allowedURIToEncodeChars = allowedURIChars.replace('%', '');
 const allowedSitemapToEncodeChars = `${allowedURIToEncodeChars}<>`;
 const domainAllowedChars = `${az}${digits}-`;
 const allowedSchemeChars = `${az}${digits}+-.`;
@@ -51,9 +51,9 @@ const allowedUserinfoChars = `${az}${digits}!"$%&'()*+,-.:;=_~`;
 
 // disallowed
 const disallowed = '\\^`{|}';
-const disallowedURIChars = `${AZ}${disallowed}<>`;
-const disallowedURIToEncodeChars = `${AZ}${disallowed}<>`;
-const disallowedSitemapToEncodeChars = `${AZ}${disallowed}`;
+const disallowedURIChars = `${disallowed}<>`;
+const disallowedURIToEncodeChars = `${disallowed}<>`;
+const disallowedSitemapToEncodeChars = `${disallowed}`;
 const disallowedDomainChars = `${AZ}${allowed.replace('-', '')}`;
 const disallowedSchemeChars = `${disallowedURIChars}${allowed.replace(/[-+.]/g, '')}`;
 const disallowedPercentEncodingChars = `${az}${GZ}${allowed}${disallowed}<>`;
@@ -69,6 +69,8 @@ const uri = [
   'f:///path',
   'http:',
   'http::',
+  'file:///Users/brian/Desktop/dev/thx/dist/index.html',
+  'file:///path/to/my/file.js',
 ];
 
 const notUri = [
@@ -86,6 +88,7 @@ const notUri = [
   '/Users/dir/file.js',
   '://example.com',
   ':',
+  'http://foo',
   'éè://test:80',
   's://s.s.',
   'foo://foo.foo',
@@ -143,6 +146,7 @@ const http = [
   'http://a.b',
   'http://a.b.',
   'http://a.b.c.d.',
+  'http://ex@mple.com',
   'http://user:pass@example.com.',
   'http://user:pass@example.com./',
   'http://user:pass@example.com./over/there?page=5#coin',
@@ -153,6 +157,14 @@ const http = [
   'http://username:password@www.example.com:80/path/to/file.php?foo=316&bar=this+has+spaces#anchor',
   'http://das-küchengeflüster.de/feed',
   'http://www.foo.bar./',
+  'http://✪df.ws/123',
+  'http://➡.ws/',
+  'http://⌘.ws',
+  'http://⌘.ws/',
+  'http://☺.damowmow.com/',
+  'http://例子.测试',
+  'http://उदाहरण.परीक्षा',
+  'http://localhost:4001//app**//**test#//dash//Dashboard1',
 ];
 
 const notHttp = [
@@ -168,6 +180,12 @@ const notHttp = [
   'http://a.b--c.de/',
   'http:',
   'http::',
+  'http://wrong%20link.tech/JFKblue.gif',
+  'http://http://blah',
+  'http://www,example,com',
+  'http://www,example.com',
+  'http://www.example,com',
+  'http://foo',
 ];
 
 const https = [
@@ -199,12 +217,27 @@ const notHttps = [
   'https://shop.delacier.com;hu.shop.delacier.com/products.json',
   'https:',
   'https::',
+  'https:::///wwww.google.com',
+];
+
+const unicode = [
+  'http://✪df.ws/123',
+  'http://➡.ws/䨹',
+  'http://foo.com/unicode_(✪)_in_parens',
+  'http://☺.damowmow.com/☺☺☺',
 ];
 
 const idn = [
   'http://español.com',
   'http://中文.com',
   'https://中文.com:8042/over/there?name=ferret&amp;pseudo=superhero#nose',
+  'http://✪df.ws/123',
+  'http://➡.ws/',
+  'http://⌘.ws',
+  'http://⌘.ws/',
+  'http://☺.damowmow.com/',
+  'http://例子.测试',
+  'http://उदाहरण.परीक्षा',
 ];
 
 const notIdn = [
@@ -540,6 +573,30 @@ describe('#uri', function() {
       expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
       expect(parsedURI).to.be.an('object').and.to.have.property('host', 'xn--fiq228c.com');
       expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', '中文.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', 8042);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'nose');
+
+      parseURI('foo://中文.COM:8042/over/there?name=ferret#nose');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', 'xn--fiq228c.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', '中文.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', 'xn--fiq228c.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', '中文.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('port', 8042);
+      expect(parsedURI).to.be.an('object').and.to.have.property('path', '/over/there');
+      expect(parsedURI).to.be.an('object').and.to.have.property('query', 'name=ferret');
+      expect(parsedURI).to.be.an('object').and.to.have.property('fragment', 'nose');
+
+      parsedURI = parseURI('foo://WWW.xn--fiq228c.COM:8042/over/there?name=ferret#nose');
+      expect(parsedURI).to.be.an('object').and.to.have.property('scheme', 'foo');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authority', 'www.xn--fiq228c.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('authorityPunydecoded', 'www.中文.com:8042');
+      expect(parsedURI).to.be.an('object').and.to.have.property('userinfo', null);
+      expect(parsedURI).to.be.an('object').and.to.have.property('host', 'www.xn--fiq228c.com');
+      expect(parsedURI).to.be.an('object').and.to.have.property('hostPunydecoded', 'www.中文.com');
       expect(parsedURI).to.be.an('object').and.to.have.property('port', 8042);
       expect(parsedURI).to.be.an('object').and.to.have.property('path', '/over/there');
       expect(parsedURI).to.be.an('object').and.to.have.property('query', 'name=ferret');
@@ -2148,18 +2205,40 @@ describe('#uri', function() {
       expect(encodeURIComponentString({})).to.be.a('string').and.to.equals('');
     });
 
-    it('should return a lowercased string', function() {
+    it('should return a lowercased string by default', function() {
+      expect(encodeURIComponentString(az)).to.be.a('string').and.to.equals(az);
       expect(encodeURIComponentString('ABCDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(encodeURIComponentString('ABcDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(encodeURIComponentString('aBcDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(encodeURIComponentString('aBcDEf')).to.be.a('string').and.to.equals('abcdef');
       expect(encodeURIComponentString('abcdef')).to.be.a('string').and.to.equals('abcdef');
+
+      expect(encodeURIComponentString(AZ, { lowercase: true })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString('ABCDEF', { lowercase: true })).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('ABcDEF', { lowercase: true })).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('aBcDEF', { lowercase: true })).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('aBcDEf', { lowercase: true })).to.be.a('string').and.to.equals('abcdef');
+      expect(encodeURIComponentString('abcdef', { lowercase: true })).to.be.a('string').and.to.equals('abcdef');
+    });
+
+    it('should return the exact same uppercased characters if lowercase is false', function() {
+      expect(encodeURIComponentString(AZ, { lowercase: false })).to.be.a('string').and.to.equals(AZ);
+      expect(encodeURIComponentString('ABCDEF', { lowercase: false })).to.be.a('string').and.to.equals('ABCDEF');
+      expect(encodeURIComponentString('ABcDEF', { lowercase: false })).to.be.a('string').and.to.equals('ABcDEF');
+      expect(encodeURIComponentString('aBcDEF', { lowercase: false })).to.be.a('string').and.to.equals('aBcDEF');
+      expect(encodeURIComponentString('aBcDEf', { lowercase: false })).to.be.a('string').and.to.equals('aBcDEf');
+      expect(encodeURIComponentString('abcdef', { lowercase: false })).to.be.a('string').and.to.equals('abcdef');
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
       expect(encodeURIComponentString(az)).to.be.a('string').and.to.equals(az);
       expect(encodeURIComponentString(digits)).to.be.a('string').and.to.equals(digits);
       expect(encodeURIComponentString(allowed.replace('%', ''))).to.be.a('string').and.to.equals(allowed.replace('%', ''));
+
+      expect(encodeURIComponentString(az, { lowercase: false })).to.be.a('string').and.to.equals(az);
+      expect(encodeURIComponentString(AZ, { lowercase: false })).to.be.a('string').and.to.equals(AZ);
+      expect(encodeURIComponentString(digits, { lowercase: false })).to.be.a('string').and.to.equals(digits);
+      expect(encodeURIComponentString(allowed.replace('%', ''), { lowercase: false })).to.be.a('string').and.to.equals(allowed.replace('%', ''));
 
       expect(encodeURIComponentString(az, { sitemap: false })).to.be.a('string').and.to.equals(az);
       expect(encodeURIComponentString(digits, { sitemap: false })).to.be.a('string').and.to.equals(digits);
@@ -2280,7 +2359,7 @@ describe('#uri', function() {
       expect(() => encodeURIString('https:isbn:0-486-27557-4', { sitemap: false })).to.not.throw();
     });
 
-    it('should not throw an uri error if uri to encode has letters in uppercase', function() {
+    it('should not throw an uri error if uri to encode has letters in uppercase by default', function() {
       expect(() => encodeURIString('http://example.com/OVER/there')).to.not.throw();
       expect(() => encodeURIString('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => encodeURIString('http://EXAMPLE.com/OVER/there')).to.not.throw();
@@ -2293,11 +2372,25 @@ describe('#uri', function() {
       expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
       expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
 
-      expect(() => encodeURIString('http://example.com/OVER/there', { web: true })).to.not.throw();
-      expect(() => encodeURIString('HTTP://example.com/OVER/there', { web: true })).to.not.throw();
-      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
-      expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
-      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+      expect(() => encodeURIString('http://example.com/OVER/there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://example.com/OVER/there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://EXAMPLE.com/OVER/there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('http://USER:PASS@example.com/OVER/there', { sitemap: true })).to.not.throw();
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { sitemap: true })).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => encodeURIString('FTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => encodeURIString('FTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => encodeURIString('FTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+
+      expect(() => encodeURIString('HTTP://example.com/OVER/there', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('HTTP://user:pass@example.com', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+
+      expect(() => encodeURIString('HTTP://example.com/OVER/there', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeURIString('HTTP://user:pass@example.com', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if uri to encode has special sitemap characters', function() {
@@ -2366,10 +2459,23 @@ describe('#uri', function() {
       expect(() => encodeURIString('http://example.com/oveùr/there', { sitemap: true })).to.not.throw();
     });
 
-    it('should return a lowercased uri', function() {
+    it('should return a lowercased uri by default', function() {
       expect(encodeURIString('FTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('ftp://www.example.com.');
       expect(encodeURIString('HTTP://WWW.EXAMPLE.COM.', { web: true })).to.be.a('string').and.to.equals('http://www.example.com.');
       expect(encodeURIString('HTTP://WWW.EXAMPLE.COM.', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(encodeURIString('ftp://WWW.EXAMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('ftp://www.example.com.');
+      expect(encodeURIString('http://WWW.EXAmPLE.COM.', { web: true, lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(encodeURIString('https://WWW.EXaMPLE.COM.', { sitemap: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+
+      expect(encodeURIString('ftp://WWW.EXAMPLE.COM./Over/There', { lowercase: false })).to.be.a('string').and.to.equals('ftp://www.example.com./Over/There');
+      expect(encodeURIString('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
+      expect(encodeURIString('https://WWW.EXaMPLE.COM./Over/There?a=B&b=c#Anchor', { sitemap: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com./Over/There?a=B&amp;b=c#Anchor');
+
+      expect(encodeURIString('https://WWW.中文.COM./Over/There?a=B&b=c#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.xn--fiq228c.com./Over/There?a=B&b=c#Anchor');
+      expect(encodeURIString('https://WWW.xn--fiq228c.COM./Over/There?a=B&b=c#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.xn--fiq228c.com./Over/There?a=B&b=c#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
@@ -2487,13 +2593,22 @@ describe('#uri', function() {
       expect(decodeURIComponentString({})).to.be.a('string').and.to.equals('');
     });
 
-    it('should return a lowercased string', function() {
+    it('should return a lowercased string by default', function() {
       expect(decodeURIComponentString('ABCDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(decodeURIComponentString('ABcDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(decodeURIComponentString('aBcDEF')).to.be.a('string').and.to.equals('abcdef');
       expect(decodeURIComponentString('aBcDEf')).to.be.a('string').and.to.equals('abcdef');
       expect(decodeURIComponentString('abcdef')).to.be.a('string').and.to.equals('abcdef');
       expect(decodeURIComponentString(AZ)).to.be.a('string').and.to.equals(az);
+    });
+
+    it('should return letters in uppercase if lowercase is false', function() {
+      expect(decodeURIComponentString('ABCDEF', { lowercase: false })).to.be.a('string').and.to.equals('ABCDEF');
+      expect(decodeURIComponentString('ABcDEF', { lowercase: false })).to.be.a('string').and.to.equals('ABcDEF');
+      expect(decodeURIComponentString('aBcDEF', { lowercase: false })).to.be.a('string').and.to.equals('aBcDEF');
+      expect(decodeURIComponentString('aBcDEf', { lowercase: false })).to.be.a('string').and.to.equals('aBcDEf');
+      expect(decodeURIComponentString('abcdef', { lowercase: false })).to.be.a('string').and.to.equals('abcdef');
+      expect(decodeURIComponentString(AZ, { lowercase: false })).to.be.a('string').and.to.equals(AZ);
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
@@ -2593,12 +2708,18 @@ describe('#uri', function() {
       expect(() => encodeWebURL('https:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
     });
 
-    it('should not throw an uri error if uri to encode has letters in uppercase', function() {
+    it('should not throw an uri error if uri to encode has letters in uppercase by default', function() {
       expect(() => encodeWebURL('http://example.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
       expect(() => encodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => encodeWebURL('HTTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeWebURL('HTTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if uri to encode has special sitemap characters', function() {
@@ -2625,8 +2746,14 @@ describe('#uri', function() {
       expect(() => encodeWebURL('http://example.com/oveùr/there')).to.not.throw();
     });
 
-    it('should return a lowercased url', function() {
+    it('should return a lowercased url by default', function() {
       expect(encodeWebURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(encodeWebURL('http://WWW.EXAmPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(encodeWebURL('https://WWW.EXaMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+      expect(encodeWebURL('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed', function() {
@@ -2707,12 +2834,18 @@ describe('#uri', function() {
       expect(() => encodeSitemapURL('https:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
     });
 
-    it('should not throw an uri error if uri to encode has letters in uppercase', function() {
+    it('should not throw an uri error if uri to encode has letters in uppercase by default', function() {
       expect(() => encodeSitemapURL('http://example.com/OVER/there')).to.not.throw();
       expect(() => encodeSitemapURL('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => encodeSitemapURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
       expect(() => encodeSitemapURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
       expect(() => encodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => encodeSitemapURL('HTTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => encodeSitemapURL('HTTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if uri to encode has special sitemap characters', function() {
@@ -2739,8 +2872,14 @@ describe('#uri', function() {
       expect(() => encodeSitemapURL('http://example.com/oveùr/there')).to.not.throw();
     });
 
-    it('should return a lowercased url', function() {
+    it('should return a lowercased url by default', function() {
       expect(encodeSitemapURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(encodeSitemapURL('https://WWW.EXaMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+      expect(encodeSitemapURL('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
+      expect(encodeSitemapURL('https://WWW.EXaMPLE.COM./Over/There?a=B&b=c#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com./Over/There?a=B&amp;b=c#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed and to not be escaped', function() {
@@ -2874,7 +3013,7 @@ describe('#uri', function() {
       expect(() => decodeURIString('https:isbn:0-486-27557-4', { sitemap: false })).to.not.throw();
     });
 
-    it('should not throw an uri error if uri to decode has letters in uppercase', function() {
+    it('should not throw an uri error if uri to decode has letters in uppercase by default', function() {
       expect(() => decodeURIString('http://example.com/OVER/there')).to.not.throw();
       expect(() => decodeURIString('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => decodeURIString('http://EXAMPLE.com/OVER/there')).to.not.throw();
@@ -2892,6 +3031,20 @@ describe('#uri', function() {
       expect(() => decodeURIString('http://EXAMPLE.com/OVER/there', { web: true })).to.not.throw();
       expect(() => decodeURIString('http://USER:PASS@example.com/OVER/there', { web: true })).to.not.throw();
       expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true })).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => decodeURIString('FTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => decodeURIString('FTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+      expect(() => decodeURIString('FTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME_CHAR');
+
+      expect(() => decodeURIString('HTTP://example.com/OVER/there', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('HTTP://user:pass@example.com', { web: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+
+      expect(() => decodeURIString('HTTP://example.com/OVER/there', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeURIString('HTTP://user:pass@example.com', { sitemap: true, lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if uri to decode has special sitemap characters', function() {
@@ -2960,10 +3113,23 @@ describe('#uri', function() {
       expect(() => decodeURIString('http://example.com/oveùr/there', { sitemap: true })).to.not.throw();
     });
 
-    it('should return a lowercased uri', function() {
+    it('should return a lowercased uri by default', function() {
       expect(decodeURIString('FTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('ftp://www.example.com.');
       expect(decodeURIString('HTTP://WWW.EXAMPLE.COM.', { web: true })).to.be.a('string').and.to.equals('http://www.example.com.');
       expect(decodeURIString('HTTP://WWW.EXAMPLE.COM.', { sitemap: true })).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(decodeURIString('ftp://WWW.EXAMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('ftp://www.example.com.');
+      expect(decodeURIString('http://WWW.EXAmPLE.COM.', { web: true, lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(decodeURIString('https://WWW.EXaMPLE.COM.', { sitemap: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+
+      expect(decodeURIString('ftp://WWW.EXAMPLE.COM./Over/There', { lowercase: false })).to.be.a('string').and.to.equals('ftp://www.example.com./Over/There');
+      expect(decodeURIString('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
+      expect(decodeURIString('https://WWW.EXaMPLE.COM./Over/There?a=B&amp;b=c#Anchor', { sitemap: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com./Over/There?a=B&b=c#Anchor');
+
+      expect(decodeURIString('https://WWW.中文.COM./Over/There?a=B&b=c#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.中文.com./Over/There?a=B&b=c#Anchor');
+      expect(decodeURIString('https://WWW.xn--fiq228c.COM./Over/There?a=B&b=c#Anchor', { web: true, lowercase: false })).to.be.a('string').and.to.equals('https://www.中文.com./Over/There?a=B&b=c#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed, by default', function() {
@@ -3119,12 +3285,18 @@ describe('#uri', function() {
       expect(() => decodeWebURL('https:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
     });
 
-    it('should not throw an uri error if uri to decode has letters in uppercase', function() {
+    it('should not throw an uri error if uri to decode has letters in uppercase by default', function() {
       expect(() => decodeWebURL('http://example.com/OVER/there')).to.not.throw();
       expect(() => decodeWebURL('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => decodeWebURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
       expect(() => decodeWebURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
       expect(() => decodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => decodeWebURL('HTTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeWebURL('HTTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if uri to decode has special sitemap characters', function() {
@@ -3151,8 +3323,15 @@ describe('#uri', function() {
       expect(() => decodeWebURL('http://example.com/oveùr/there')).to.not.throw();
     });
 
-    it('should return a lowercased url', function() {
+    it('should return a lowercased url by default', function() {
       expect(decodeWebURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(decodeWebURL('http://WWW.EXAmPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(decodeWebURL('https://WWW.EXaMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+      expect(decodeWebURL('http://WWW.EXAMPLE.COM./Over/There', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There');
+      expect(decodeWebURL('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed', function() {
@@ -3239,12 +3418,18 @@ describe('#uri', function() {
       expect(() => decodeSitemapURL('http:isbn:0-486-27557-4')).to.throw(URIError).with.property('code', 'URI_INVALID_AUTHORITY');
     });
 
-    it('should not throw an uri error if url to decode has letters in uppercase', function() {
+    it('should not throw an uri error if url to decode has letters in uppercase by default', function() {
       expect(() => decodeSitemapURL('http://example.com/OVER/there')).to.not.throw();
       expect(() => decodeSitemapURL('HTTP://example.com/OVER/there')).to.not.throw();
       expect(() => decodeSitemapURL('http://EXAMPLE.com/OVER/there')).to.not.throw();
       expect(() => decodeSitemapURL('http://USER:PASS@example.com/OVER/there')).to.not.throw();
       expect(() => decodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE')).to.not.throw();
+    });
+
+    it('should throw an uri error if uri to encode has letters in uppercase for scheme when lowercase is false', function() {
+      expect(() => decodeSitemapURL('HTTP://example.com/OVER/there', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeSitemapURL('HTTP://USER:PASS@EXAMPLE.COM/OVER/THERE', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
+      expect(() => decodeSitemapURL('HTTP://user:pass@example.com', { lowercase: false })).to.throw(URIError).with.property('code', 'URI_INVALID_SCHEME');
     });
 
     it('should not throw an uri error if url to decode has special sitemap characters', function() {
@@ -3277,8 +3462,15 @@ describe('#uri', function() {
       expect(() => decodeSitemapURL('http://example.com/oveùr/there')).to.not.throw();
     });
 
-    it('should return a lowercased url', function() {
+    it('should return a lowercased url by default', function() {
       expect(decodeSitemapURL('HTTP://WWW.EXAMPLE.COM.')).to.be.a('string').and.to.equals('http://www.example.com.');
+    });
+
+    it('should return an uri with uppercase letters if lowercase is false except host automatically put in lowercase to be RFC-3986 compliant', function() {
+      expect(decodeSitemapURL('http://WWW.EXAmPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com.');
+      expect(decodeSitemapURL('https://WWW.EXaMPLE.COM.', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com.');
+      expect(decodeSitemapURL('http://WWW.EXAmPLE.COM./Over/There?a=B#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('http://www.example.com./Over/There?a=B#Anchor');
+      expect(decodeSitemapURL('https://WWW.EXaMPLE.COM./Over/There?a=B&amp;b=c#Anchor', { lowercase: false })).to.be.a('string').and.to.equals('https://www.example.com./Over/There?a=B&b=c#Anchor');
     });
 
     it('should return a string with the exact same characters if allowed', function() {
@@ -3350,17 +3542,21 @@ describe('#uri', function() {
       uri.forEach((string) => {
         expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
       });
-    });
-  });
 
-  context('when using decodeWebURL with encodeWebURL', function() {
-    it('should return the exact same string ignoring case', function() {
       http.forEach((string) => {
-        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+        expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
       });
 
       https.forEach((string) => {
-        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+        expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      idn.forEach((string) => {
+        expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      unicode.forEach((string) => {
+        expect(decodeURIString(encodeURIString(string))).to.be.a('string').and.to.equals(string.toLowerCase());
       });
     });
   });
@@ -3376,6 +3572,10 @@ describe('#uri', function() {
       });
 
       idn.forEach((string) => {
+        expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
+      });
+
+      unicode.forEach((string) => {
         expect(decodeWebURL(encodeWebURL(string))).to.be.a('string').and.to.equals(string.toLowerCase());
       });
     });
@@ -3480,14 +3680,6 @@ describe('#uri', function() {
       });
     });
   });
-
-  // ajouter urls de tests dans les tableaux
-  // test valid web urls
-  // test invalid web urls
-  // test valid uris
-  // test invalid uris
-  // test valid sitemap urls
-  // test invalid sitemap urls
 
   // doc + logo + publish node-uri
 });
