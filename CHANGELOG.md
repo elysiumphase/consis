@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.3.1 - delivery @09/10/2020
+
+- remove doc directory from npm package
+
 ## 1.3.0 - delivery @09/10/2020
 
 - add string.charAt and string.replaceAt helpers with non-BMP support
