@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/consis.png" alt="c o n s i s" style="border-radius:50%"/>
+  <img src="doc/consis.png" alt="Consis" style="border-radius:50%"/>
 <p>
 
 <p align="center">
@@ -48,6 +48,8 @@
     - [split({ string, separator\[, max\] })](#split-string-separator-max-)
     - [capitalize({ string\[, first\] })](#capitalize-string-first-)
     - [camelCase({ string, separator })](#camelcase-string-separator-)
+    - [charAt(string, index)](#charatstring-index)
+    - [replaceAt(string, index, value)](#replaceatstring-index-value)
   - [Time](#time)
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
@@ -58,12 +60,15 @@
   - [Errors](#error)
     - [Object structure](#object-structure)
     - [Codes](#codes)
-- [Development](#development)
+- [Code of Conduct](#code-of-conduct)
+- [Contributing](#contributing)
+- [Support](#support)
+- [Security](#security)
 - [Licence](#licence)
 
 # Presentation
 
-Many libraries exist in the Node.js sphere providing great helpers like Lodash and Ramda to name a few. This library is not intended to replace them but provide very simple, safe and lighter helpers that I personally use in a lot of my projects.
+Many libraries exist in the Node.js sphere providing great helpers like Lodash and Ramda to name a few. This library is not intended to replace them but provide very simple, safe and lighter helpers.
 
 **Consistency is the key.**
 
@@ -71,7 +76,7 @@ ECMAScript is not always consistent and this library is mostly used to give some
 
 Because even if *null*, *undefined*, *NaN* have a real technical sense, it can lead to some inconsistency and be a pain sometimes to check if a value exists or not.
 
-This whole library is based on type checking that is another pain and sometimes I personally just don't want to use TypeScript or Flow but the native language.
+This whole library is based on type checking that is another pain and sometimes we just don't want to use TypeScript or Flow but the native language.
 
 Type casting is another example where `Boolean('false'|'0')` returns `true` while we would want it to return `false` or because `Number(null)` returns `0` and `Number(undefined|NaN)` returns `NaN` that in the end of the day makes the code inconsistent.
 
@@ -91,9 +96,7 @@ copy; // { foo: { bar: 'baz' } }
 obj; // { foo: { bar: 'baz' } }
 ```
 
-These helpers are mostly based on my own work and experimentation of the language. Only *image* helper is based on [is-png](https://github.com/sindresorhus/is-png) and *uuid* helper on [uuid-validate](https://github.com/mixer/uuid-validate).
-
-Because I'm using these helpers in a lot of my projects doesn't mean you'll find it useful. Even if **this library has no dependency** I personally recommend to copy/paste some of the code you need in your project with its tests so you will lighten your dependency graph. Then regularly check code base and testing updates.
+These helpers are mostly based on creator's own work and experimentation of the language. Only *image* helper is based on [is-png](https://github.com/sindresorhus/is-png) and *uuid* helper on [uuid-validate](https://github.com/mixer/uuid-validate).
 
 # Installation
 
@@ -146,7 +149,7 @@ Cast a value to a specific primitive type. If the value is not of this type or c
 
 ### str(thing)
 Cast *thing* to a primitive string if possible or returns *undefined*. Because `String(undefined|null|NaN)` returns a string *'undefined'*|*'null'*|*'NaN'*.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<String\>** | **undefined**
 
 Examples:
@@ -180,10 +183,10 @@ num(undefined|null|NaN); // undefined
 
 ### int(thing[, { ge, le } ])
 Cast *thing* to a primitive integer number, with *less or equal than* or *greater or equal than* options, or returns *undefined*. In base 10 only.
-  - `thing`**<Any\>**
-  - `options`**<Object\>** *Default*: `undefined`
-    - `ge`**<Number\>** Greater or equal than
-    - `le`**<Number\>** Less or equal than
+  - `thing` **<Any\>**
+  - `options` **<Object\>** *Default*: `undefined`
+    - `ge` **<Number\>** Greater or equal than
+    - `le` **<Number\>** Less or equal than
   - Returns: **<Integer Number\>** | **undefined**
 
 Examples:
@@ -199,10 +202,10 @@ int(undefined|null|NaN); // undefined
 
 ### float(thing[, { ge, le } ])
 Cast *thing* to a primitive float number, with *less or equal than* or *greater or equal than* options, or returns *undefined*. In base 10 only.
-  - `thing`**<Any\>**
-  - `options`**<Object\>** *Default*: `undefined`
-    - `ge`**<Number\>** Greater or equal than
-    - `le`**<Number\>** Less or equal than
+  - `thing` **<Any\>**
+  - `options` **<Object\>** *Default*: `undefined`
+    - `ge` **<Number\>** Greater or equal than
+    - `le` **<Number\>** Less or equal than
   - Returns: **<Float Number\>** | **undefined**
 
 Examples:
@@ -217,7 +220,7 @@ float(undefined|null|NaN); // undefined
 
 ### bool(thing)
 Cast *thing* to a primitive boolean if possible or returns *undefined*. Because `Boolean('false'|'0')` returns `true` and `Boolean(new Boolean(0))` returns `true`. A string value as *'false'*, *'true'*, *'0'*, *'1'* and numbers *0* and *1* should be cast to a boolean.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Boolean\>** | **undefined**
 
 Examples:
@@ -248,7 +251,7 @@ arr(undefined|null|NaN); // undefined
 
 ### date(thing)
 Cast *thing* to a Date object or undefined if thing refers to an invalid date. Because `new Date(null)` returns `1970-01-01T00:00:00.000Z` but `new Date(undefined|NaN)` returns `Invalid Date`.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Date\>** | **undefined**
 
 Examples:
@@ -261,8 +264,8 @@ date(undefined|null|NaN); // undefined
 
 ### round(n[, nbDecimals])
 Round *n* with an optional number of decimals.
-  - `n`**<Number\>** | **<String\>**
-  - `nbDecimals`**<Number\>** *Min*: `0` *Max*: `100` *Default*: `0`
+  - `n` **<Number\>** | **<String\>**
+  - `nbDecimals` **<Number\>** *Min*: `0` *Max*: `100` *Default*: `0`
   - Returns: **<String\>** | **undefined**
 
 Examples:
@@ -280,8 +283,8 @@ round(undefined|null|NaN); // undefined
 
 ### precision(n[, nbDecimals])
 Format *n* with a specified number of decimals.
-  - `n`**<Number\>** | **<String\>**
-  - `nbDecimals`**<Number\>** *Min*: `1` *Default*: `1`
+  - `n` **<Number\>** | **<String\>**
+  - `nbDecimals` **<Number\>** *Min*: `1` *Default*: `1`
   - Returns: **<String\>** | **undefined**
 
 Examples:
@@ -319,22 +322,22 @@ encodings.utf8; // 'utf8'
 
 Image helper.
 
-- `image`**<Object\>** with the following property:
+- `image` **<Object\>** with the following property:
 
 ### isPng(buffer)
 Whether a buffer is of png format.
-  - `buffer`**<Buffer\>**
+  - `buffer` **<Buffer\>**
   - Returns: **<Boolean\>**
 
 ## Math
 
 Math helper.
 
-- `math`**<Object\>** with the following property:
+- `math` **<Object\>** with the following property:
 
 ### minmax(array)
 Directly get min and max values in a specific array. Works with numbers or strings.
-  - `array`**<Array\>**<Number|String\>
+  - `array` **<Array\>**<Number|String\>
   - Returns: **<Object\>**
       - min: **<Number|String\>**
       - max: **<Number|String\>**
@@ -350,11 +353,11 @@ minmax(undefined|null|NaN); // {}
 ## Object
 Object helper.
 
-- `object`**<Object\>** with the following properties:
+- `object` **<Object\>** with the following properties:
 
 ### exists(thing)
 Whether the specified value is not *null*, *undefined* or *NaN*.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -366,8 +369,8 @@ exists(undefined|null|NaN); // false
 
 ### is(Type, thing)
 Whether the specified value is from the specified type regarding its whole prototype.
-  - `Type`**<Constructor Function\>**
-  - `thing`**<Any\>**
+  - `Type` **<Constructor Function\>**
+  - `thing` **<Any\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -384,8 +387,8 @@ is(undefined|null|NaN, undefined|null|NaN); // false
 
 ### hasOwn(thing, prop)
 Whether a specified object has a property in its own prototype. Works with symbols.
-  - `thing`**<Any\>**
-  - `prop`**<Any\>**
+  - `thing` **<Any\>**
+  - `prop` **<Any\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -405,8 +408,8 @@ hasOwn(undefined|null|NaN, undefined|null|NaN); // false
 
 ### has(thing, prop)
 Whether a specified object has a property in its whole prototype. Works with symbols.
-  - `thing`**<Any\>**
-  - `prop`**<Any\>**
+  - `thing` **<Any\>**
+  - `prop` **<Any\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -424,7 +427,7 @@ has(undefined|null|NaN, undefined|null|NaN); // false
 
 ### sizeOwn(thing)
 Number of own properties or length. For strings, empty characters aren't ignored.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Number\>**
 
 Examples:
@@ -443,7 +446,7 @@ sizeOwn(undefined|null|NaN); // 0
 
 ### isEmptyOwn(thing)
 Whether a specified object or value is empty. For strings, empty characters are considered empty.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -461,7 +464,7 @@ isEmptyOwn(undefined|null|NaN); // true
 
 ### getType(thing)
 Get the object's type.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Constructor Function\>** | **undefined**
 
 Examples:
@@ -478,7 +481,7 @@ getType(undefined|null|NaN); // undefined
 
 ### getTypeName(thing)
 Get the object's type name.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<String\>** | **undefined**
 
 Examples:
@@ -495,8 +498,8 @@ getTypeName(undefined|null|NaN); // undefined
 
 ### compare(a, b)
 Compare two numbers or two strings (ignoring case and accents).
-  - `a`**<String|Number\>**
-  - `b`**<String|Number\>**
+  - `a` **<String|Number\>**
+  - `b` **<String|Number\>**
   - Returns: **<Object\>**
       - inferior: **<Boolean\>**
       - superior: **<Boolean\>**
@@ -515,7 +518,7 @@ compare(); // {}
 
 ### clone(thing)
 Make a deep copy of a specified object. **Does not handle circular references, use with caution**.
-  - `thing`**<Any\>**
+  - `thing` **<Any\>**
   - Returns: **<Any\>**
 
 
@@ -601,20 +604,20 @@ Http/s request helper.
 ### requester(options): AsyncFunction
   - `options`* **<Object\>**:
     - `url`* **<String\>** The url to request.
-    - `method`**<String\>** The HTTP request method. *Default*: `GET`.
-    - `headers`**<Object\>** An object containing request headers. *Default*: `{}`.
-    - `data`**<Any\>** Data to write to the request. *Default*: `{}`.
-    - `format`**<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
-    - `encoding`**<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
-    - `agent`**<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
-    - `auth`**<String\>** Basic authentication i.e. 'user:password' to compute an Authorization header. *Default*: `undefined`.
-    - `createConnection`**<Function\>** A function that produces a socket/stream to use for the request when the agent option is not used. This can be used to avoid creating a custom Agent class just to override the default *createConnection* function. *Default*: `undefined`.
-    - `defaultPort`**<Number\>** Default port for the protocol. *Default*: `agent.defaultPort` | `undefined`.
-    - `family`**<Number\>** IP address family to use when resolving host or hostname. Valid values are *4* or *6*. When unspecified, both IP v4 and v6 will be used. *Default*: `undefined`.
-    - `localAddress`**<String\>** Local interface to bind for network connections. *Default*: `undefined`.
-    - `lookup`**<Function\>** Custom lookup function. *Default*: `dns.lookup()`.
-    - `maxHeaderSize`**<Number\>** Optionally overrides the value of *--max-http-header-size* for requests received from the server, i.e. the maximum length of response headers in bytes. **For Node >= v13.3.0**. *Default*: `8192`.
-    - `timeout`**<Number\>** A number specifying the socket timeout in milliseconds. This will set the timeout before the socket is connected. *Default*: `60000`.
+    - `method` **<String\>** The HTTP request method. *Default*: `GET`.
+    - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
+    - `data` **<Any\>** Data to write to the request. *Default*: `{}`.
+    - `format` **<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
+    - `encoding` **<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
+    - `agent` **<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
+    - `auth` **<String\>** Basic authentication i.e. 'user:password' to compute an Authorization header. *Default*: `undefined`.
+    - `createConnection` **<Function\>** A function that produces a socket/stream to use for the request when the agent option is not used. This can be used to avoid creating a custom Agent class just to override the default *createConnection* function. *Default*: `undefined`.
+    - `defaultPort` **<Number\>** Default port for the protocol. *Default*: `agent.defaultPort` | `undefined`.
+    - `family` **<Number\>** IP address family to use when resolving host or hostname. Valid values are *4* or *6*. When unspecified, both IP v4 and v6 will be used. *Default*: `undefined`.
+    - `localAddress` **<String\>** Local interface to bind for network connections. *Default*: `undefined`.
+    - `lookup` **<Function\>** Custom lookup function. *Default*: `dns.lookup()`.
+    - `maxHeaderSize` **<Number\>** Optionally overrides the value of *--max-http-header-size* for requests received from the server, i.e. the maximum length of response headers in bytes. **For Node >= v13.3.0**. *Default*: `8192`.
+    - `timeout` **<Number\>** A number specifying the socket timeout in milliseconds. This will set the timeout before the socket is connected. *Default*: `60000`.
 
 
   - Returns: **<Promise\>**
@@ -738,14 +741,14 @@ const pipeline = promisify(stream.pipeline);
 
 String helper.
 
-- `string`**<Object\>** with the following properties:
+- `string` **<Object\>** with the following properties:
 
 ### split({ string, separator[, max] })
 Split a string with the specified separator with a possible maximum split values.
-  - `options`**<Object\>**
-    - `string`**<String\>**
-    - `separator`**<String\>** | **<RegExp\>**
-    - `max`**<Number\>** Optional maximum split values.
+  - `options` **<Object\>**
+    - `string` **<String\>**
+    - `separator` **<String\>** | **<RegExp\>**
+    - `max` **<Number\>** Optional maximum split values.
   - Returns: **<Array\>**
 
 Examples:
@@ -760,10 +763,10 @@ split({ string: 'a, b,c,  d,e' }) // []
 
 ### capitalize({ string[, first] })
 put to upper case the first letter of a string.
-  - `options`**<Object\>**
-    - `string`**<String\>**
-    - `first`**<Boolean\>** Whether only the first letter should be in upper case.
-    - `max`**<Number\>** Optional maximum split values.
+  - `options` **<Object\>**
+    - `string` **<String\>**
+    - `first` **<Boolean\>** Whether only the first letter should be in upper case.
+    - `max` **<Number\>** Optional maximum split values.
   - Returns: **<String\>**
 
 Examples:
@@ -778,9 +781,9 @@ capitalize({ first: true }) // ""
 
 ### camelCase({ string, separator })
 Put to camel case a string which words are separated by a specific string or pattern.
-  - `options`**<Object\>**
-    - `string`**<String\>**
-    - `separator`**<String\>** | **<RegExp\>**
+  - `options` **<Object\>**
+    - `string` **<String\>**
+    - `separator` **<String\>** | **<RegExp\>**
   - Returns: **<String\>**
 
 Examples:
@@ -795,14 +798,51 @@ camelCase({ string: 'camel,case,string' }) // ""
 camelCase({ separator: ',' }) // ""
 ```
 
+### charAt(string, index)
+Get a character at a specific index of a string. Support non-Basic-Multilingual-Plane (BMP) characters. The empty string is returned if unable to extract character from string at the specified index.
+  - `string` **<String\>**
+  - `index` **<Integer\>**
+  - Returns: **<String\>**
+
+Examples:
+```javascript
+charAt(); // ""
+charAt(null|undefined|NaN); // ""
+charAt('string', -1); // ""
+charAt('string', 6); // ""
+
+charAt('string', 5); // "g"
+charAt('😂𩷶𨭎𠬠', 0); // "😂"
+```
+
+### replaceAt(string, index, value)
+Replace a value at a specific index of a string. Support non-Basic-Multilingual-Plane (BMP) characters. The empty string is returned if unable to replace the value at the specified index.
+  - `string` **<String\>**
+  - `index` **<Integer\>**
+  - Returns: **<String\>**
+
+Examples:
+```javascript
+replaceAt(); // ""
+replaceAt(null|undefined|NaN); // ""
+replaceAt('string', -1, ''); // ""
+replaceAt('string', 6, ''); // ""
+replaceAt('string', 5); // ""
+replaceAt('string', 0, 5); // ""
+
+replaceAt('string', 5, 'ge'); // "stringe"
+replaceAt('😂𩷶𨭎𠬠', 0, '🦄🦄🦄'); // "🦄🦄🦄𩷶𨭎𠬠"
+replaceAt('𩷶', 0, '𠬠'); // "𠬠"
+```
+
 ## Time
 Time helper.
 
-- `time`**<Object\>** with the following properties:
+- `time` **<Object\>** with the following properties:
 
 ### sleep(ms)
 Sleep during *ms* milliseconds without blocking the loop.
-  - `ms`**<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
+  - `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
   - Returns: **<Promise\>**
     - Resolve: **<undefined\>**
     - Never throws
@@ -818,7 +858,7 @@ Examples:
 
 ### isISOStringDate(thing)
 Whether a string respects the ISO 8601 format.
-  - `thing`**<String\>**
+  - `thing` **<String\>**
   - Returns: **<Boolean\>**
 
 Examples:
@@ -830,7 +870,7 @@ isISOStringDate(''|undefined|null|NaN); // false
 
 ### toLocaleISOString(d)
 Get the locale ISO 8601 formatted string for a specified date.
-  - `d`**<Date\>**
+  - `d` **<Date\>**
   - Returns: **<String\>** | **<undefined\>**
 
 Examples:
@@ -844,12 +884,12 @@ toLocaleISOString(undefined|null|NaN); // undefined
 ## Uuid
 Uuid helper.
 
-- `uuid`**<Object\>** with the following properties:
+- `uuid` **<Object\>** with the following properties:
 
 ### isValidUUID(thing[, version])
 Whether a string is a valid uuid in a specified version.
-  - `thing`**<String\>**
-  - `version`**<String\>** *Min*: `0` *Max*: `4` *Default*: `4`.
+  - `thing` **<String\>**
+  - `version` **<String\>** *Min*: `0` *Max*: `4` *Default*: `4`.
   - Returns: **<Boolean\>**
 
 Examples:
@@ -872,7 +912,7 @@ isValidUUID(''|undefined|null|NaN, undefined|null|NaN); // false
 
 ### Object structure
 
-Errors emitted by **c o n s i s** are native Error with an additional *code* property:
+Errors emitted by **Consis** are native Error with an additional *code* property:
 
 ```javascript
 {
@@ -959,20 +999,19 @@ Errors emitted by **c o n s i s** are native Error with an additional *code* pro
 
 </table>
 
-# Contribution
+# Code of Conduct
+This project has a [Code of Conduct](.github/CODE_OF_CONDUCT.md). By interacting with this repository, organization, or community you agree to abide by its terms.
 
-All contributions are greatly welcomed :)
+# Contributing
+Please have a look at our [TODO](TODO.md) for any work in progress.
 
-Please follow Git flow, ES6/7, ESLint Airbnb base rules.
+Please take also a moment to read our [Contributing Guidelines](.github/CONTRIBUTING.md) if you haven't yet done so.
+
+# Support
+Please see our [Support](.github/SUPPORT.md) page if you have any questions or for any help needed.
+
+# Security
+For any security concerns or issues, please visit our [Security Policy](.github/SECURITY.md) page.
 
 # Licence
-
-*consis* is released under the MIT license.
-
-Copyright (C) 2020 Adrien Valcke
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+[MIT](LICENSE.md).

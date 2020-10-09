@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.3.0 - delivery @09/10/2020
+
+- add string.charAt and string.replaceAt helpers with non-BMP support
+- add tests
+- update readme
+- add github community files
+- update dev dependencies
+
 ## 1.2.0 - delivery @11/08/2020
 
 - add math.minmax helper
