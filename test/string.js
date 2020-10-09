@@ -1,5 +1,5 @@
 const { expect } = require('./Common');
-const { string: { split, capitalize, camelCase } } = require('../lib');
+const { string: { split, capitalize, camelCase, charAt, replaceAt } } = require('../lib');
 
 describe('#string', function() {
   context('when using split', function() {
@@ -219,6 +219,106 @@ describe('#string', function() {
       expect(camelCase({ string: new Set() })).to.be.a('string').and.to.equal('');
       expect(camelCase({ string: new WeakMap() })).to.be.a('string').and.to.equal('');
       expect(camelCase({ string: new WeakSet() })).to.be.a('string').and.to.equal('');
+    });
+  });
+
+  context('when using charAt', function() {
+    it('should return the empty string when testing on anything other than a string', function() {
+      expect(charAt({ string: undefined })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: null })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: NaN })).to.be.a('string').and.to.equal('');
+      expect(charAt()).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: 5 })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new Error('error') })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: true })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: Symbol('s') })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: function f() {} })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: {} })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: [] })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new Date() })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new Map() })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new Set() })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new WeakMap() })).to.be.a('string').and.to.equal('');
+      expect(charAt({ string: new WeakSet() })).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return the empty string when testing on a string but at a wrong index', function() {
+      expect(charAt('string')).to.be.a('string').and.to.equal('');
+      expect(charAt('string', 'index')).to.be.a('string').and.to.equal('');
+      expect(charAt('string', -1)).to.be.a('string').and.to.equal('');
+      expect(charAt('string', 2000)).to.be.a('string').and.to.equal('');
+      expect(charAt('string', [])).to.be.a('string').and.to.equal('');
+      expect(charAt('string', {})).to.be.a('string').and.to.equal('');
+      expect(charAt('string', new Error('error'))).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return the expected character including non-BMP characters', function() {
+      expect(charAt('string', 0)).to.be.a('string').and.to.equal('s');
+      expect(charAt('string', 2)).to.be.a('string').and.to.equal('r');
+      expect(charAt('string', 5)).to.be.a('string').and.to.equal('g');
+      expect(charAt('𨭎abcdef', 0)).to.be.a('string').and.to.equal('𨭎');
+      expect(charAt('abc𨭎def', 3)).to.be.a('string').and.to.equal('𨭎');
+      expect(charAt('abcdef𨭎', 6)).to.be.a('string').and.to.equal('𨭎');
+      expect(charAt('😂abcdef', 0)).to.be.a('string').and.to.equal('😂');
+      expect(charAt('abc😂def', 3)).to.be.a('string').and.to.equal('😂');
+      expect(charAt('abcdef😂', 6)).to.be.a('string').and.to.equal('😂');
+      expect(charAt('😂𩷶𨭎𠬠', 0)).to.be.a('string').and.to.equal('😂');
+      expect(charAt('😂𩷶𨭎𠬠', 1)).to.be.a('string').and.to.equal('𩷶');
+      expect(charAt('😂𩷶𨭎𠬠', 2)).to.be.a('string').and.to.equal('𨭎');
+      expect(charAt('😂𩷶𨭎𠬠', 3)).to.be.a('string').and.to.equal('𠬠');
+    });
+  });
+
+  context('when using replaceAt', function() {
+    it('should return the empty string when testing on anything other than a string', function() {
+      expect(replaceAt({ string: undefined })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: null })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: NaN })).to.be.a('string').and.to.equal('');
+      expect(replaceAt()).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: 5 })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new Error('error') })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: true })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: Symbol('s') })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: function f() {} })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: {} })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: [] })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new Date() })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new Map() })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new Set() })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new WeakMap() })).to.be.a('string').and.to.equal('');
+      expect(replaceAt({ string: new WeakSet() })).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return the empty string when testing on a string but at a wrong index', function() {
+      expect(replaceAt('string')).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 'index')).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', -1)).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2000)).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', [])).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', {})).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', new Error('error'))).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return the empty string when testing on a string at a right index but the replaced value is not a string or missing', function() {
+      expect(replaceAt('string', 2)).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2, [])).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2, {})).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2, 5)).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2, true)).to.be.a('string').and.to.equal('');
+      expect(replaceAt('string', 2, new Error('error'))).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return the expected string with non-BMP characters support', function() {
+      expect(replaceAt('string', 0, 'p')).to.be.a('string').and.to.equal('ptring');
+      expect(replaceAt('string', 2, 'us')).to.be.a('string').and.to.equal('stusing');
+      expect(replaceAt('string', 5, 'ted')).to.be.a('string').and.to.equal('strinted');
+      expect(replaceAt('𨭎abcdef', 0, ' ')).to.be.a('string').and.to.equal(' abcdef');
+      expect(replaceAt('abc𨭎def', 3, ' ')).to.be.a('string').and.to.equal('abc def');
+      expect(replaceAt('abcdef𨭎', 6, 'g')).to.be.a('string').and.to.equal('abcdefg');
+      expect(replaceAt('😂𩷶𨭎𠬠', 0, '😍')).to.be.a('string').and.to.equal('😍𩷶𨭎𠬠');
+      expect(replaceAt('😂𩷶𨭎𠬠', 1, '🤣')).to.be.a('string').and.to.equal('😂🤣𨭎𠬠');
+      expect(replaceAt('😂𩷶𨭎𠬠', 2, '🦄')).to.be.a('string').and.to.equal('😂𩷶🦄𠬠');
+      expect(replaceAt('🥺𩷶𨭎𠬠', 3, '🦠')).to.be.a('string').and.to.equal('🥺𩷶𨭎🦠');
     });
   });
 });

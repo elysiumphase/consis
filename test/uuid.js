@@ -1,10 +1,12 @@
 const { execSync } = require('child_process');
 const { expect } = require('./Common');
 const { uuid: { getUUIDVersion, isValidUUID } } = require('../lib');
-const uuidv1 = require('uuid/v1');
-const uuidv3 = require('uuid/v3');
-const uuidv4 = require('uuid/v4');
-const uuidv5 = require('uuid/v5');
+const {
+  v1: uuidv1,
+  v3: uuidv3,
+  v4: uuidv4,
+  v5: uuidv5,
+} = require('uuid');
 
 describe('#uuid', function() {
   context('when using getUUIDVersion', function() {
