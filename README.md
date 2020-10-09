@@ -10,7 +10,7 @@
 - [Presentation](#presentation)
 - [Installation](#installation)
 - [Technical information](#technical-information)
-  - [Node.js](#node.js)
+  - [Node.js](#nodejs)
   - [Debugging](#debugging)
   - [Tests](#tests)
     - [Linting](#linting)
@@ -54,10 +54,10 @@
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
     - [toLocaleISOString(d)](#tolocaleisostringd)
-  - [Uuid](#time)
+  - [Uuid](#uuid)
     - [isValidUUID(thing\[, version\])](#isvaliduuidthing-version)
   - [Environment variables](#environment-variables)
-  - [Errors](#error)
+  - [Errors](#errors)
     - [Object structure](#object-structure)
     - [Codes](#codes)
 - [Code of Conduct](#code-of-conduct)
@@ -1003,7 +1003,6 @@ Errors emitted by **Consis** are native Error with an additional *code* property
 This project has a [Code of Conduct](.github/CODE_OF_CONDUCT.md). By interacting with this repository, organization, or community you agree to abide by its terms.
 
 # Contributing
-Please have a look at our [TODO](TODO.md) for any work in progress.
 
 Please take also a moment to read our [Contributing Guidelines](.github/CONTRIBUTING.md) if you haven't yet done so.
 
