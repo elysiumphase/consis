@@ -54,6 +54,7 @@
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
     - [toLocaleISOString(d)](#tolocaleisostringd)
+    - [timeout(ms, promise)](#timeoutms-promise)
   - [Uuid](#uuid)
     - [isValidUUID(thing\[, version\])](#isvaliduuidthing-version)
   - [Environment variables](#environment-variables)
@@ -606,7 +607,7 @@ Http/s request helper.
     - `url`* **<String\>** The url to request.
     - `method` **<String\>** The HTTP request method. *Default*: `GET`.
     - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
-    - `data` **<Any\>** Data to write to the request. *Default*: `{}`.
+    - `data` **<Object\>** | **<String\>** | **<Buffer\>** Data to write to the request. *Default*: `{}`.
     - `format` **<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
     - `encoding` **<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
     - `agent` **<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
@@ -879,6 +880,23 @@ const d = new Date('2020-01-25T15:58:37.181Z');
 d.toISOString(); // '2020-01-13T15:58:37.181Z'
 toLocaleISOString(d); // '2020-01-13T16:58:37.181Z' (Paris time)
 toLocaleISOString(undefined|null|NaN); // undefined
+```
+
+### timeout(ms, promise)
+Set a timeout to a promise being resolved.
+  - `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
+  - `promise` **<Promise\>**
+  - Returns: **<Promise\>**
+    - Resolve: **<Any\>** Data resolved by *promise*
+    - Throws: **<Error\>**
+
+Examples:
+```javascript
+// to be run in an async function
+
+const res = await timeout(5000, requester({ url: 'http://google.fr' }));
+
+await timeout(5000, sleep(6000)); // reject timeout error
 ```
 
 ## Uuid

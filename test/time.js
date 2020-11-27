@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
 const { expect } = require('./Common');
-const { time: { isISOStringDate, sleep, toLocaleISOString } } = require('../lib');
+const { time: { isISOStringDate, sleep, toLocaleISOString, timeout } } = require('../lib');
 
 describe('#time', function() {
   context('when using isISOStringDate', function() {
@@ -342,6 +342,16 @@ describe('#time', function() {
       expect(date.toISOString()).to.equal(isoLocalDate.toISOString());
       expect(date.getTimezoneOffset()).to.equal(isoLocalDate.getTimezoneOffset());
       expect(isoLocaleDateString).to.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}[\+-][0-9]{2}:[0-9]{2}$/);
+    });
+  });
+
+  context('when using timeout', function() {
+    it('should always be fulfilled immediately if the ms parameter is a string', async function () {
+      const parameter = 'x';
+      expect(timeout(parameter)).to.be.fulfilled;
+      const start = Date.now();
+      await timeout(parameter);
+      expect(Date.now() - start).to.be.at.least(0).and.at.most(10);
     });
   });
 });
