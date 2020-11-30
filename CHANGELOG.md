@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.3.2 - delivery @28/11/2020
+## 1.3.2 - delivery @30/11/2020
 
 - fix requester to add query data to path and not in body for GET requests
 - add time.timeout helper
