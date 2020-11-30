@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
 const { expect } = require('./Common');
-const { time: { isISOStringDate, sleep, toLocaleISOString } } = require('../lib');
+const { time: { isISOStringDate, sleep, toLocaleISOString, timeout } } = require('../lib');
 
 describe('#time', function() {
   context('when using isISOStringDate', function() {
@@ -342,6 +342,80 @@ describe('#time', function() {
       expect(date.toISOString()).to.equal(isoLocalDate.toISOString());
       expect(date.getTimezoneOffset()).to.equal(isoLocalDate.getTimezoneOffset());
       expect(isoLocaleDateString).to.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}[\+-][0-9]{2}:[0-9]{2}$/);
+    });
+  });
+
+  context('when using timeout', function() {
+    it('should always throw a timeout error if the ms parameter is 0', async function () {
+      let error;
+
+      try {
+        await timeout(0, sleep(1000));
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.be.an('error');
+      expect(error.name).to.equal('PromiseTimeoutError');
+      expect(error.code).to.equal('PROMISE_TIMEOUT');
+    });
+
+    it('should always throw a timeout error if the ms parameter is not a number', async function () {
+      let error;
+
+      try {
+        await timeout('x', sleep(1000));
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.be.an('error');
+      expect(error.name).to.equal('PromiseTimeoutError');
+      expect(error.code).to.equal('PROMISE_TIMEOUT');
+    });
+
+    it('should throw a timeout error if the promise execution lasts longer than the timeout set up', async function () {
+      let error;
+
+      try {
+        await timeout(1000, sleep(2000));
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.be.an('error');
+      expect(error.name).to.equal('PromiseTimeoutError');
+      expect(error.code).to.equal('PROMISE_TIMEOUT');
+    });
+
+    it('should not throw a timeout error the promise execution lasts shorter than the timeout set up', async function () {
+      let error;
+
+      try {
+        await timeout(2000, sleep(1000));
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.not.exist;
+    });
+
+    it('should resolve the promise if not timed out', async function () {
+      const promise = async () => {
+        await sleep(1000);
+        return 'promise resolved';
+      };
+      let res;
+      let error;
+
+      try {
+        res = await timeout(2000, promise());
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.not.exist;
+      expect(res).to.equal('promise resolved');
     });
   });
 });
