@@ -54,6 +54,7 @@
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
     - [toLocaleISOString(d)](#tolocaleisostringd)
+    - [timeout(ms, promise)](#timeoutms-promise)
   - [Uuid](#uuid)
     - [isValidUUID(thing\[, version\])](#isvaliduuidthing-version)
   - [Environment variables](#environment-variables)
@@ -604,20 +605,25 @@ Http/s request helper.
 ### requester(options): AsyncFunction
   - `options`* **<Object\>**:
     - `url`* **<String\>** The url to request.
-    - `method` **<String\>** The HTTP request method. *Default*: `GET`.
-    - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
-    - `data` **<Any\>** Data to write to the request. *Default*: `{}`.
+    - `data` **<Object\>** | **<String\>** | **<Buffer\>** Data to write to the request. *Default*: `{}`.
     - `format` **<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
     - `encoding` **<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
+
+    The options below are from [Node http.request](https://nodejs.org/api/http.html#http_http_request_url_options_callback):
+    - `method` **<String\>** The HTTP request method. *Default*: `GET`.
+    - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
     - `agent` **<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
     - `auth` **<String\>** Basic authentication i.e. 'user:password' to compute an Authorization header. *Default*: `undefined`.
     - `createConnection` **<Function\>** A function that produces a socket/stream to use for the request when the agent option is not used. This can be used to avoid creating a custom Agent class just to override the default *createConnection* function. *Default*: `undefined`.
     - `defaultPort` **<Number\>** Default port for the protocol. *Default*: `agent.defaultPort` | `undefined`.
     - `family` **<Number\>** IP address family to use when resolving host or hostname. Valid values are *4* or *6*. When unspecified, both IP v4 and v6 will be used. *Default*: `undefined`.
+    - `insecureHTTPParser` **<Boolean\>** Use an insecure HTTP parser that accepts invalid HTTP headers when `true`. Using the insecure parser should be avoided. **For Node >= v13.8.0, v12.15.0, v10.19.0**. *Default*: `false`.
     - `localAddress` **<String\>** Local interface to bind for network connections. *Default*: `undefined`.
     - `lookup` **<Function\>** Custom lookup function. *Default*: `dns.lookup()`.
     - `maxHeaderSize` **<Number\>** Optionally overrides the value of *--max-http-header-size* for requests received from the server, i.e. the maximum length of response headers in bytes. **For Node >= v13.3.0**. *Default*: `8192`.
+    - `setHost` **<Boolean\>** Specifies whether or not to automatically add the `Host` header. *Default*: `true`.
     - `timeout` **<Number\>** A number specifying the socket timeout in milliseconds. This will set the timeout before the socket is connected. *Default*: `60000`.
+    - `signal` **<AbortSignal\>** An [AbortSignal](https://nodejs.org/api/globals.html#globals_class_abortsignal) that may be used to abort an ongoing request. **For Node >= v15.3.0**.
 
 
   - Returns: **<Promise\>**
@@ -635,7 +641,7 @@ Examples:
 (async () => {
   try {
     const { statusCode, headers, body } = await requester({
-      url: 'https://api.coinpaprika.com/v1/global',
+      url: 'https://api.coingecko.com/api/v3/global',
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -663,7 +669,7 @@ const pipeline = promisify(stream.pipeline);
   try {
     const wstream = createWriteStream('crypto_market_data.json');
     const { body: rstream } = await requester({
-      url: 'https://api.coinpaprika.com/v1/global',
+      url: 'https://api.coingecko.com/api/v3/global',
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -881,6 +887,38 @@ toLocaleISOString(d); // '2020-01-13T16:58:37.181Z' (Paris time)
 toLocaleISOString(undefined|null|NaN); // undefined
 ```
 
+### timeout(ms, promise)
+Set a timeout to a promise being resolved.
+
+**Note**:
+There is at the moment no way to cancel the promise execution even though this function can make you manage the execution time of a promise, although you can cancel the execution by another way like using an [AbortSignal](https://nodejs.org/api/globals.html#globals_class_abortsignal) to abort an HTTP request for an example (Node v15.3.0+).
+
+
+  - `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
+  - `promise` **<Promise\>**
+  - Returns: **<Promise\>**
+    - Resolve: **<Any\>** Data resolved by *promise*
+    - Throws: **<PromiseTimeoutError\>**
+
+Examples:
+```javascript
+// to be run in an async function
+const ac = new AbortController();
+
+try {
+  const res = await timeout(5000, requester({
+    url: 'http://google.fr',
+    signal: ac.signal,
+  }));
+
+  // ...
+} catch (e) {
+  if (e.code === 'PROMISE_TIMEOUT') {
+    ac.abort();
+  }
+}
+```
+
 ## Uuid
 Uuid helper.
 
@@ -931,6 +969,16 @@ Errors emitted by **Consis** are native Error with an additional *code* property
     <th style="text-align: center;">code</th>
     <th style="text-align: center;">description</th>
     <th style="text-align: center;">module</th>
+  </tr>
+
+  <tr>
+    <td rowspan="2"><i>PromiseTimeoutError</i></td>
+  </tr>
+
+  <tr>
+    <td>PROMISE_TIMEOUT</td>
+    <td>promise timed out</td>
+    <td>lib/time</td>
   </tr>
 
   <tr>
@@ -1003,6 +1051,7 @@ Errors emitted by **Consis** are native Error with an additional *code* property
 This project has a [Code of Conduct](.github/CODE_OF_CONDUCT.md). By interacting with this repository, organization, or community you agree to abide by its terms.
 
 # Contributing
+Please have a look at our [TODO](TODO.md) for any work in progress.
 
 Please take also a moment to read our [Contributing Guidelines](.github/CONTRIBUTING.md) if you haven't yet done so.
 

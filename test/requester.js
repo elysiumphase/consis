@@ -269,5 +269,60 @@ describe('#requester', function() {
         expect(response.body.constructor === Buffer).to.be.true;
       });
     });
+
+    context('when requesting url with header application/x-www-form-urlencoded and data filled or not', function() {
+      it('should resolve a status code, headers and body', async function() {
+        const req1 = {
+          url: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=5&page=1&sparkline=true&price_change_percentage=24h%2C7d',
+          format: 'json',
+        };
+
+        // vs_currency is mandatory and added to the query
+        // all other data in query should be added to the url so res should be
+        // the same for req1 and req2
+        const req2 = {
+          url: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd',
+          method: 'GET',
+          encoding: 'utf8',
+          format: 'json',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Cache-Control': 'no-cache',
+            Origin: `consis-${Math.floor(Math.random() * Math.floor(25000))}`,
+          },
+          data: {
+            page: 1,
+            order: 'market_cap_desc',
+            per_page: 5,
+            sparkline: true,
+            price_change_percentage: '24h,7d',
+          },
+        };
+        let res1;
+        let res2;
+        let error;
+
+        try {
+          ([res1, res2] = await Promise.all([requester(req1), requester(req2)]));
+        } catch (e) {
+          error = e;
+        };
+
+        expect(error).to.not.exist;
+
+        expect(res1).to.exist.and.to.be.an('object');
+        expect(res1.statusCode).to.exist.and.to.equal(200);
+        expect(res1.headers).to.exist.and.to.be.an('object');
+        expect(res1.body).to.exist.and.to.be.an('array');
+
+        expect(res2).to.exist.and.to.be.an('object');
+        expect(res2.statusCode).to.exist.and.to.equal(200);
+        expect(res2.headers).to.exist.and.to.be.an('object');
+        expect(res2.body).to.exist.and.to.be.an('array');
+
+        expect(res1.body).to.eql(res2.body);
+      });
+    });
   });
 });

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.3.2 - delivery @30/11/2020
+
+- fix requester to add query data to path and not in body for GET requests
+- add time.timeout helper
+- add tests
+- update readme
+
 ## 1.3.1 - delivery @09/10/2020
 
 - remove doc directory from npm package
