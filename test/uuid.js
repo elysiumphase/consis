@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
 const { expect } = require('./Common');
-const { uuid: { getUUIDVersion, isValidUUID } } = require('../lib');
+const { uuid: { getUUIDVersion, isValidUUID } } = require('../src');
 const {
   v1: uuidv1,
   v3: uuidv3,

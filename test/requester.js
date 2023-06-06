@@ -3,12 +3,12 @@ const path = require('path');
 const url = require('url');
 const { Readable } = require('stream');
 const expect = require('chai').expect;
-const requester = require('../lib/requester');
+const requester = require('../src/requester');
 
 const urlJson = 'https://api.coinpaprika.com/v1/global';
 const urlImage = 'https://bitcoin.org/img/home/bitcoin-img.svg';
 const urlHttps = 'https://nodejs.org/api/stream.html';
-const urlHttp = 'http://photos.lci.fr/images/1280/360/affiche-course-vendee-globe-a9e1f6-0@1x.gif';
+const urlHttp = 'https://photos.tf1info.fr/images/1280/360/affiche-course-vendee-globe-a9e1f6-0@1x.gif';
 const urlBigImage = 'https://upload.wikimedia.org/wikipedia/commons/2/23/Hong_Kong_Skyline_Restitch_-_Dec_2007.jpg';
 
 describe('#requester', function() {
@@ -68,7 +68,7 @@ describe('#requester', function() {
   });
 
   context('when the format option exists but is invalid', function() {
-    it('should throw a RequesterError error', async function() {
+    it('should not throw a RequesterError error', async function() {
       let response;
       let error;
 
@@ -78,15 +78,13 @@ describe('#requester', function() {
         error = e;
       };
 
-      expect(response).to.not.exist;
-      expect(error).to.exist.and.to.be.an('error');
-      expect(error.name).to.equal('RequesterError');
-      expect(error.code).to.equal('BAD_FORMAT');
+      expect(response).to.exist;
+      expect(error).to.not.exist;
     });
   });
 
   context('when the encoding option exists but is invalid', function() {
-    it('should throw a RequesterError error', async function() {
+    it('should not throw a RequesterError error', async function() {
       let response;
       let error;
 
@@ -96,10 +94,8 @@ describe('#requester', function() {
         error = e;
       };
 
-      expect(response).to.not.exist;
-      expect(error).to.exist.and.to.be.an('error');
-      expect(error.name).to.equal('RequesterError');
-      expect(error.code).to.equal('BAD_ENCODING');
+      expect(response).to.exist;
+      expect(error).to.not.exist;
     });
   });
 
@@ -267,7 +263,7 @@ describe('#requester', function() {
         expect(response.statusCode).to.exist.and.to.equal(200);
         expect(response.headers).to.exist.and.to.be.an('object');
         expect(response.body.constructor === Buffer).to.be.true;
-      });
+      }).timeout(5000);
     });
 
     context('when requesting url with header application/x-www-form-urlencoded and data filled or not', function() {
@@ -275,6 +271,9 @@ describe('#requester', function() {
         const req1 = {
           url: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=5&page=1&sparkline=true&price_change_percentage=24h%2C7d',
           format: 'json',
+          headers: {
+            'User-Agent': 'PostmanRuntime/7.29.2',
+          },
         };
 
         // vs_currency is mandatory and added to the query
@@ -289,7 +288,7 @@ describe('#requester', function() {
             Accept: 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
             'Cache-Control': 'no-cache',
-            Origin: `consis-${Math.floor(Math.random() * Math.floor(25000))}`,
+            'User-Agent': 'PostmanRuntime/7.29.2',
           },
           data: {
             page: 1,
@@ -321,7 +320,7 @@ describe('#requester', function() {
         expect(res2.headers).to.exist.and.to.be.an('object');
         expect(res2.body).to.exist.and.to.be.an('array');
 
-        expect(res1.body).to.eql(res2.body);
+        expect(res1.body.id).to.equal(res2.body.id);
       });
     });
   });

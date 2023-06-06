@@ -3,10 +3,12 @@
 <p>
 
 <p align="center">
-  A small Node.js library for type casting, http/s requests, object cloning, and other object, string, image, time and uuid helpers.
+  A small Node.js library for type casting, http/s requests, object cloning, and other math, object, string, image, time and uuid helpers.
 <p>
 
-# Table of Contents
+## Table of Contents
+
+- [Table of Contents](#table-of-contents)
 - [Presentation](#presentation)
 - [Installation](#installation)
 - [Technical information](#technical-information)
@@ -16,6 +18,9 @@
     - [Linting](#linting)
     - [Unit](#unit)
 - [Usage](#usage)
+  - [Import](#import)
+    - [Main](#main)
+    - [Deep requires](#deep-requires)
   - [Cast](#cast)
     - [str(thing)](#strthing)
     - [num(thing\[, { ge, le } \])](#numthing--ge-le--)
@@ -27,6 +32,7 @@
     - [round(n\[, nbDecimals\])](#roundn-nbdecimals)
     - [precision(n\[, nbDecimals\])](#precisionn-nbdecimals)
   - [Encodings](#encodings)
+  - [Enum(...enums)](#enumenums)
   - [Image](#image)
     - [isPng(buffer)](#ispngbuffer)
   - [Math](#math)
@@ -42,6 +48,7 @@
     - [getTypeName(thing)](#gettypenamething)
     - [compare(a, b)](#comparea-b)
     - [clone(thing)](#clonething)
+    - [freeze(thing)](#freezething)
   - [Requester](#requester)
     - [requester(options): AsyncFunction](#requesteroptions-asyncfunction)
   - [String](#string)
@@ -50,11 +57,14 @@
     - [camelCase({ string, separator })](#camelcase-string-separator-)
     - [charAt(string, index)](#charatstring-index)
     - [replaceAt(string, index, value)](#replaceatstring-index-value)
+    - [formatSentence(string, lowercase)](#formatsentencestring-lowercase)
   - [Time](#time)
     - [sleep(ms)](#sleepms)
     - [isISOStringDate(thing)](#isisostringdatething)
     - [toLocaleISOString(d)](#tolocaleisostringd)
     - [timeout(ms, promise)](#timeoutms-promise)
+    - [ms](#ms)
+    - [getDate({ \[d, add, subtract\] })](#getdate-d-add-subtract-)
   - [Uuid](#uuid)
     - [isValidUUID(thing\[, version\])](#isvaliduuidthing-version)
   - [Environment variables](#environment-variables)
@@ -65,9 +75,9 @@
 - [Contributing](#contributing)
 - [Support](#support)
 - [Security](#security)
-- [Licence](#licence)
+- [License](#license)
 
-# Presentation
+## Presentation
 
 Many libraries exist in the Node.js sphere providing great helpers like Lodash and Ramda to name a few. This library is not intended to replace them but provide very simple, safe and lighter helpers.
 
@@ -99,46 +109,81 @@ obj; // { foo: { bar: 'baz' } }
 
 These helpers are mostly based on creator's own work and experimentation of the language. Only *image* helper is based on [is-png](https://github.com/sindresorhus/is-png) and *uuid* helper on [uuid-validate](https://github.com/mixer/uuid-validate).
 
-# Installation
+## Installation
 
 `npm install consis`
 
 `npm i -S consis`
 
-# Technical information
+## Technical information
 
-## Node.js
+### Node.js
 
 - Language: JavaScript ES6/ES7
 - VM: Node.js >= Carbon (8.17.0)
 
-## Debugging
+### Debugging
 
-- Some helpers can use *util.debuglog* that writes debug messages to *stderr* based on the existence of the `NODE_DEBUG` environment variable. See [Errors](#error).
+- Some helpers can use *util.debuglog* that writes debug messages to *stderr* based on the existence of the `NODE_DEBUG` environment variable. See [Errors](#errors).
 
-## Tests
-
-Command to run all tests:
+### Tests
 
 `npm test`
 
-Note that requester's timeout test only works for Node >= 10.7.0.
+#### Linting
 
-### Linting
+`npm run lint`
 
-ESLint with Airbnb base rules. See [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript).
+Code style follows [Airbnb JavaScript Best Practices](https://github.com/airbnb/javascript) using ESLint.
 
-`npm run test:lint`
+#### Unit
 
-### Unit
+`npm test`
 
 Mocha and Chai.
 
-`npm run test:unit`
+## Usage
 
-# Usage
+### Import
 
-## Cast
+#### Main
+
+```javascript
+const consis = require('consis');
+
+// consis is an object of helpers which are also objects
+const {
+  cast,
+  encodings,
+  Enum,
+  image,
+  math,
+  object,
+  requester,
+  string,
+  time,
+  uuid,
+} = require('consis');
+```
+
+#### Deep requires
+
+```javascript
+const cast = require('consis/cast');
+const encodings = require('consis/encodings');
+const Enum = require('consis/Enum');
+const image = require('consis/image');
+const math = require('consis/math');
+const object = require('consis/object');
+const requester = require('consis/requester');
+const string = require('consis/string');
+const time = require('consis/time');
+const uuid = require('consis/uuid');
+```
+
+- `consis` **<Object\>** with the following helpers.
+
+### Cast
 
 Type casting helper.
 
@@ -146,14 +191,19 @@ Cast a value to a specific primitive type. If the value is not of this type or c
 
 *undefined* is an interesting value because when stringifying an object, an undefined property disappears that can sometimes be useful.
 
+Please note that numbers greater than the max safe integer will be assigned an `undefined` value.
+
 - `cast` **<Object\>** with the following properties:
 
-### str(thing)
+#### str(thing)
+
 Cast *thing* to a primitive string if possible or returns *undefined*. Because `String(undefined|null|NaN)` returns a string *'undefined'*|*'null'*|*'NaN'*.
-  - `thing` **<Any\>**
-  - Returns: **<String\>** | **undefined**
+
+- `thing` **<Any\>**
+- Returns: **<String\>** | **undefined**
 
 Examples:
+
 ```javascript
 str('hello'); // 'hello'
 str(true); // 'true'
@@ -162,15 +212,18 @@ str(5.55); // '5.55'
 str(undefined|null|NaN); // undefined
 ```
 
-### num(thing[, { ge, le } ])
+#### num(thing[, { ge, le } ])
+
 Cast *thing* to a primitive number, with *less or equal than* or *greater or equal than* options, or returns *undefined*. Because `Number(null)` returns `0` and `Number(undefined|NaN)` returns `NaN`. Only for finite values.
-  - `thing`**<Any\>**
-  - `options`**<Object\>** *Default*: `undefined`
-    - `ge`**<Number\>** Greater or equal than
-    - `le`**<Number\>** Less or equal than
-  - Returns: **<Number\>** | **undefined**
+
+- `thing`**<Any\>**
+- `options`**<Object\>** *Default*: `undefined`
+  - `ge`**<Number\>** Greater or equal than
+  - `le`**<Number\>** Less or equal than
+- Returns: **<Number\>** | **undefined**
 
 Examples:
+
 ```javascript
 num(5); // 5
 num('5'); // 5
@@ -182,15 +235,18 @@ num(new Number(5)); // 5
 num(undefined|null|NaN); // undefined
 ```
 
-### int(thing[, { ge, le } ])
+#### int(thing[, { ge, le } ])
+
 Cast *thing* to a primitive integer number, with *less or equal than* or *greater or equal than* options, or returns *undefined*. In base 10 only.
-  - `thing` **<Any\>**
-  - `options` **<Object\>** *Default*: `undefined`
-    - `ge` **<Number\>** Greater or equal than
-    - `le` **<Number\>** Less or equal than
-  - Returns: **<Integer Number\>** | **undefined**
+
+- `thing` **<Any\>**
+- `options` **<Object\>** *Default*: `undefined`
+  - `ge` **<Number\>** Greater or equal than
+  - `le` **<Number\>** Less or equal than
+- Returns: **<Integer Number\>** | **undefined**
 
 Examples:
+
 ```javascript
 int(5.9); // 5
 int('5.9'); // 5
@@ -201,15 +257,18 @@ int(5.11, { ge: 0, le: 4 }); // undefined
 int(undefined|null|NaN); // undefined
 ```
 
-### float(thing[, { ge, le } ])
+#### float(thing[, { ge, le } ])
+
 Cast *thing* to a primitive float number, with *less or equal than* or *greater or equal than* options, or returns *undefined*. In base 10 only.
-  - `thing` **<Any\>**
-  - `options` **<Object\>** *Default*: `undefined`
-    - `ge` **<Number\>** Greater or equal than
-    - `le` **<Number\>** Less or equal than
-  - Returns: **<Float Number\>** | **undefined**
+
+- `thing` **<Any\>**
+- `options` **<Object\>** *Default*: `undefined`
+  - `ge` **<Number\>** Greater or equal than
+  - `le` **<Number\>** Less or equal than
+- Returns: **<Float Number\>** | **undefined**
 
 Examples:
+
 ```javascript
 float(5.9); // 5.9
 float(0, { ge: 0 }); // 0
@@ -219,12 +278,15 @@ float(5.11, { ge: 0, le: 5.12 }); // 5.11
 float(undefined|null|NaN); // undefined
 ```
 
-### bool(thing)
+#### bool(thing)
+
 Cast *thing* to a primitive boolean if possible or returns *undefined*. Because `Boolean('false'|'0')` returns `true` and `Boolean(new Boolean(0))` returns `true`. A string value as *'false'*, *'true'*, *'0'*, *'1'* and numbers *0* and *1* should be cast to a boolean.
-  - `thing` **<Any\>**
-  - Returns: **<Boolean\>** | **undefined**
+
+- `thing` **<Any\>**
+- Returns: **<Boolean\>** | **undefined**
 
 Examples:
+
 ```javascript
 bool(true); // true
 bool(new Boolean(true)); // true
@@ -235,13 +297,16 @@ bool(undefined|null|NaN); // undefined
 bool('hello'); // undefined
 ```
 
-### arr(thing[, allowEmpty])
+#### arr(thing[, allowEmpty])
+
 Cast *thing* to a primitive array if possible or returns *undefined*. If *allowEmpty* is false and *thing* is an empty array then returns undefined. Please note that `cast.arr` doesn't make a deep copy of an array, prefer `object.clone` to do this and avoid possible mutations.
-  - `thing`**<Any\>**
-  - `allowEmpty`**<Boolean\>** *Default*: `true`
-  - Returns: **<Array\>** | **undefined**
+
+- `thing`**<Any\>**
+- `allowEmpty`**<Boolean\>** *Default*: `true`
+- Returns: **<Array\>** | **undefined**
 
 Examples:
+
 ```javascript
 arr([5, 9]); // [5, 9]
 arr([]); // []
@@ -250,12 +315,15 @@ arr('[5, 9]'); // [5, 9]
 arr(undefined|null|NaN); // undefined
 ```
 
-### date(thing)
+#### date(thing)
+
 Cast *thing* to a Date object or undefined if thing refers to an invalid date. Because `new Date(null)` returns `1970-01-01T00:00:00.000Z` but `new Date(undefined|NaN)` returns `Invalid Date`.
-  - `thing` **<Any\>**
-  - Returns: **<Date\>** | **undefined**
+
+- `thing` **<Any\>**
+- Returns: **<Date\>** | **undefined**
 
 Examples:
+
 ```javascript
 date('2011-02-23T12:05:44+01:00'); // Date instance 2011-02-23T11:05:44.000Z
 date([]); // undefined
@@ -263,13 +331,16 @@ date({}); // undefined
 date(undefined|null|NaN); // undefined
 ```
 
-### round(n[, nbDecimals])
+#### round(n[, nbDecimals])
+
 Round *n* with an optional number of decimals.
-  - `n` **<Number\>** | **<String\>**
-  - `nbDecimals` **<Number\>** *Min*: `0` *Max*: `100` *Default*: `0`
-  - Returns: **<String\>** | **undefined**
+
+- `n` **<Number\>** | **<String\>**
+- `nbDecimals` **<Number\>** *Min*: `0` *Max*: `100` *Default*: `0`
+- Returns: **<String\>** | **undefined**
 
 Examples:
+
 ```javascript
 round('5.9'); // '6'
 round(5.77); // '6'
@@ -282,13 +353,16 @@ round(5, 5); // '5.00000'
 round(undefined|null|NaN); // undefined
 ```
 
-### precision(n[, nbDecimals])
+#### precision(n[, nbDecimals])
+
 Format *n* with a specified number of decimals.
-  - `n` **<Number\>** | **<String\>**
-  - `nbDecimals` **<Number\>** *Min*: `1` *Default*: `1`
-  - Returns: **<String\>** | **undefined**
+
+- `n` **<Number\>** | **<String\>**
+- `nbDecimals` **<Number\>** *Min*: `1` *Default*: `1`
+- Returns: **<String\>** | **undefined**
 
 Examples:
+
 ```javascript
 precision('5.9'); // '5.9'
 precision('5.99'); // '5.9'
@@ -300,7 +374,7 @@ precision(5.777, 2); // '5.77'
 precision(undefined|null|NaN); // undefined
 ```
 
-## Encodings
+### Encodings
 
 Enumerate available encodings.
 
@@ -315,35 +389,63 @@ Enumerate available encodings.
   - `hex` **<String\>** Encode each byte as two hexadecimal characters. *Value*: `hex`
 
 Example:
+
 ```javascript
 encodings.utf8; // 'utf8'
 ```
 
-## Image
+### Enum(...enums)
+
+Enumeration helper. Recommended with strings.
+
+- `enums` **<Any\>** List of enumeration arguments.
+- Returns: **<Object\>** | **undefined**
+
+Example:
+
+```javascript
+const directions = Enum(
+  'UP',
+  'DOWN',
+  'LEFT',
+  'RIGHT',
+);
+
+console.log(directions);
+
+// { UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT' }
+```
+
+### Image
 
 Image helper.
 
 - `image` **<Object\>** with the following property:
 
-### isPng(buffer)
-Whether a buffer is of png format.
-  - `buffer` **<Buffer\>**
-  - Returns: **<Boolean\>**
+#### isPng(buffer)
 
-## Math
+Whether a buffer is of png format.
+
+- `buffer` **<Buffer\>**
+- Returns: **<Boolean\>**
+
+### Math
 
 Math helper.
 
 - `math` **<Object\>** with the following property:
 
-### minmax(array)
+#### minmax(array)
+
 Directly get min and max values in a specific array. Works with numbers or strings.
-  - `array` **<Array\>**<Number|String\>
-  - Returns: **<Object\>**
-      - min: **<Number|String\>**
-      - max: **<Number|String\>**
+
+- `array` **<Array\>**<Number|String\>
+- Returns: **<Object\>**
+  - min: **<Number|String\>**
+  - max: **<Number|String\>**
 
 Examples:
+
 ```javascript
 minmax([55, 9]); // { min: 9, max: 55 }
 minmax(['a', 'b']); // { min: 'a', max: 'b' }
@@ -351,30 +453,37 @@ minmax({}); // {}
 minmax(undefined|null|NaN); // {}
 ```
 
-## Object
+### Object
+
 Object helper.
 
 - `object` **<Object\>** with the following properties:
 
-### exists(thing)
+#### exists(thing)
+
 Whether the specified value is not *null*, *undefined* or *NaN*.
-  - `thing` **<Any\>**
-  - Returns: **<Boolean\>**
+
+- `thing` **<Any\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 exists('hello'); // true
 exists({}); // true
 exists(undefined|null|NaN); // false
 ```
 
-### is(Type, thing)
+#### is(Type, thing)
+
 Whether the specified value is from the specified type regarding its whole prototype.
-  - `Type` **<Constructor Function\>**
-  - `thing` **<Any\>**
-  - Returns: **<Boolean\>**
+
+- `Type` **<Constructor Function\>**
+- `thing` **<Any\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 is(String, 'hello'); // true
 
@@ -386,13 +495,16 @@ is(Error, err); // true
 is(undefined|null|NaN, undefined|null|NaN); // false
 ```
 
-### hasOwn(thing, prop)
+#### hasOwn(thing, prop)
+
 Whether a specified object has a property in its own prototype. Works with symbols.
-  - `thing` **<Any\>**
-  - `prop` **<Any\>**
-  - Returns: **<Boolean\>**
+
+- `thing` **<Any\>**
+- `prop` **<Any\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 hasOwn({ x: 5 }, 'x'); // true
 
@@ -407,13 +519,16 @@ hasOwn(err, 'message'); // false
 hasOwn(undefined|null|NaN, undefined|null|NaN); // false
 ```
 
-### has(thing, prop)
+#### has(thing, prop)
+
 Whether a specified object has a property in its whole prototype. Works with symbols.
-  - `thing` **<Any\>**
-  - `prop` **<Any\>**
-  - Returns: **<Boolean\>**
+
+- `thing` **<Any\>**
+- `prop` **<Any\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 has({ x: 5 }, 'x'); // true
 
@@ -426,12 +541,15 @@ has(err, 'message'); // true
 has(undefined|null|NaN, undefined|null|NaN); // false
 ```
 
-### sizeOwn(thing)
+#### sizeOwn(thing)
+
 Number of own properties or length. For strings, empty characters aren't ignored.
-  - `thing` **<Any\>**
-  - Returns: **<Number\>**
+
+- `thing` **<Any\>**
+- Returns: **<Number\>**
 
 Examples:
+
 ```javascript
 sizeOwn({ x: 5 }); // 1
 
@@ -445,12 +563,15 @@ sizeOwn(new Map([['key1', 'value1'], [2, 'value2']])); // 2
 sizeOwn(undefined|null|NaN); // 0
 ```
 
-### isEmptyOwn(thing)
+#### isEmptyOwn(thing)
+
 Whether a specified object or value is empty. For strings, empty characters are considered empty.
-  - `thing` **<Any\>**
-  - Returns: **<Boolean\>**
+
+- `thing` **<Any\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 isEmptyOwn({ x: 5 }); // false
 
@@ -463,12 +584,15 @@ isEmptyOwn(new Map([['key1', 'value1'], [2, 'value2']])); // false
 isEmptyOwn(undefined|null|NaN); // true
 ```
 
-### getType(thing)
+#### getType(thing)
+
 Get the object's type.
-  - `thing` **<Any\>**
-  - Returns: **<Constructor Function\>** | **undefined**
+
+- `thing` **<Any\>**
+- Returns: **<Constructor Function\>** | **undefined**
 
 Examples:
+
 ```javascript
 getType({}); // [Function: Object]
 getType([]); // [Function: Array]
@@ -480,12 +604,15 @@ getType(new MyError); // [Function: MyError]
 getType(undefined|null|NaN); // undefined
 ```
 
-### getTypeName(thing)
+#### getTypeName(thing)
+
 Get the object's type name.
-  - `thing` **<Any\>**
-  - Returns: **<String\>** | **undefined**
+
+- `thing` **<Any\>**
+- Returns: **<String\>** | **undefined**
 
 Examples:
+
 ```javascript
 getTypeName({}); // 'Object'
 getTypeName([]); // 'Array'
@@ -497,16 +624,19 @@ getTypeName(new MyError); // 'MyError'
 getTypeName(undefined|null|NaN); // undefined
 ```
 
-### compare(a, b)
+#### compare(a, b)
+
 Compare two numbers or two strings (ignoring case and accents).
-  - `a` **<String|Number\>**
-  - `b` **<String|Number\>**
-  - Returns: **<Object\>**
-      - inferior: **<Boolean\>**
-      - superior: **<Boolean\>**
-      - equal: **<Boolean\>**
+
+- `a` **<String|Number\>**
+- `b` **<String|Number\>**
+- Returns: **<Object\>**
+  - inferior: **<Boolean\>**
+  - superior: **<Boolean\>**
+  - equal: **<Boolean\>**
 
 Examples:
+
 ```javascript
 compare('a', 'z'); // { inferior: true, superior: false, equal: false }
 compare(55, 9); // { inferior: false, superior: true, equal: false }
@@ -517,66 +647,68 @@ compare(NaN, NaN); // {}
 compare(); // {}
 ```
 
-### clone(thing)
-Make a deep copy of a specified object. **Does not handle circular references, use with caution**.
-  - `thing` **<Any\>**
-  - Returns: **<Any\>**
+#### clone(thing)
 
+Make a deep copy of a specified object. **Does not handle circular references, use with caution**.
+
+- `thing` **<Any\>**
+- Returns: **<Any\>**
 
 **Supported**:
-  - object literal
-  - custom object including its whole prototype
-  - primitives:
-    - *boolean*
-    - *number*
-    - *string*
-    - *symbol*
-  - *String*
-  - *Number*
-  - *Boolean*
-  - *Array*
-  - *Map*
-  - *Set*
-  - *DataView*
-  - *Buffer*
-  - *ArrayBuffer*
-  - *Date*
-  - *RegExp*
-  - *Error*
-  - *EvalError*
-  - *RangeError*
-  - *ReferenceError*
-  - *SyntaxError*
-  - *TypeError*
-  - *URIError*
-  - Typed Arrays:
-    - *Int8Array*
-    - *Uint8Array*
-    - *Uint8ClampedArray*
-    - *Int16Array*
-    - *Uint16Array*
-    - *Int32Array*
-    - *Uint32Array*
-    - *Float32Array*
-    - *Float64Array*
 
+- object literal
+- custom object including its whole prototype
+- primitives:
+  - *boolean*
+  - *number*
+  - *string*
+  - *symbol*
+- *String*
+- *Number*
+- *Boolean*
+- *Array*
+- *Map*
+- *Set*
+- *DataView*
+- *Buffer*
+- *ArrayBuffer*
+- *Date*
+- *RegExp*
+- *Error*
+- *EvalError*
+- *RangeError*
+- *ReferenceError*
+- *SyntaxError*
+- *TypeError*
+- *URIError*
+- Typed Arrays:
+  - *Int8Array*
+  - *Uint8Array*
+  - *Uint8ClampedArray*
+  - *Int16Array*
+  - *Uint16Array*
+  - *Int32Array*
+  - *Uint32Array*
+  - *Float32Array*
+  - *Float64Array*
 
 **Not supported**:
-  - *AsyncFunction*
-  - *Function*
-  - *GeneratorFunction*
-  - *Intl.Collator*
-  - *Intl.DateTimeFormat*
-  - *Intl.NumberFormat*
-  - *Intl.PluralRules*
-  - *Promise*
-  - *Proxy* (but impossible to check if an object is a proxy until Node v10)
-  - *WeakMap*
-  - *WeakSet*
-  - *SharedArrayBuffer* (for security reasons)
 
+- *AsyncFunction*
+- *Function*
+- *GeneratorFunction*
+- *Intl.Collator*
+- *Intl.DateTimeFormat*
+- *Intl.NumberFormat*
+- *Intl.PluralRules*
+- *Promise*
+- *Proxy* (but impossible to check if an object is a proxy until Node v10)
+- *WeakMap*
+- *WeakSet*
+- *SharedArrayBuffer* (for security reasons)
 
 Examples:
+
 ```javascript
 // bad
 const obj = { a: { b: { c : 3 } } };
@@ -597,45 +729,85 @@ clone(null); // null
 clone(NaN); // NaN
 ```
 
-## Requester
+#### freeze(thing)
+
+Deep freeze anything. **Does not handle circular references, use with caution**.
+
+- `thing` **<Any\>**
+- Returns: **<Any\>**
+
+**Not supported (won't freeze)**:
+
+- *DataView*
+- Typed Arrays:
+  - *Int8Array*
+  - *Uint8Array*
+  - *Uint8ClampedArray*
+  - *Int16Array*
+  - *Uint16Array*
+  - *Int32Array*
+  - *Uint32Array*
+  - *Float32Array*
+  - *Float64Array*
+
+Examples:
+
+```javascript
+const symbol = Symbol('s');
+const object = freeze({ hello: 'hello', [symbol]: { x: 5, y: { z: new Error('error z') } } });
+object.world = 'world';
+object[symbol].y.z = 'world';
+
+console.log(object.world); // undefined
+console.log(object[symbol]); // { x: 5, y: { z: new Error('error z') } }
+```
+
+### Requester
+
 Http/s request helper.
 
 - `requester`**<AsyncFunction\>**
 
-### requester(options): AsyncFunction
-  - `options`* **<Object\>**:
-    - `url`* **<String\>** The url to request.
-    - `data` **<Object\>** | **<String\>** | **<Buffer\>** Data to write to the request. *Default*: `{}`.
-    - `format` **<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
-    - `encoding` **<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
+#### requester(options): AsyncFunction
 
-    The options below are from [Node http.request](https://nodejs.org/api/http.html#http_http_request_url_options_callback):
-    - `method` **<String\>** The HTTP request method. *Default*: `GET`.
-    - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
-    - `agent` **<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
-    - `auth` **<String\>** Basic authentication i.e. 'user:password' to compute an Authorization header. *Default*: `undefined`.
-    - `createConnection` **<Function\>** A function that produces a socket/stream to use for the request when the agent option is not used. This can be used to avoid creating a custom Agent class just to override the default *createConnection* function. *Default*: `undefined`.
-    - `defaultPort` **<Number\>** Default port for the protocol. *Default*: `agent.defaultPort` | `undefined`.
-    - `family` **<Number\>** IP address family to use when resolving host or hostname. Valid values are *4* or *6*. When unspecified, both IP v4 and v6 will be used. *Default*: `undefined`.
-    - `insecureHTTPParser` **<Boolean\>** Use an insecure HTTP parser that accepts invalid HTTP headers when `true`. Using the insecure parser should be avoided. **For Node >= v13.8.0, v12.15.0, v10.19.0**. *Default*: `false`.
-    - `localAddress` **<String\>** Local interface to bind for network connections. *Default*: `undefined`.
-    - `lookup` **<Function\>** Custom lookup function. *Default*: `dns.lookup()`.
-    - `maxHeaderSize` **<Number\>** Optionally overrides the value of *--max-http-header-size* for requests received from the server, i.e. the maximum length of response headers in bytes. **For Node >= v13.3.0**. *Default*: `8192`.
-    - `setHost` **<Boolean\>** Specifies whether or not to automatically add the `Host` header. *Default*: `true`.
-    - `timeout` **<Number\>** A number specifying the socket timeout in milliseconds. This will set the timeout before the socket is connected. *Default*: `60000`.
-    - `signal` **<AbortSignal\>** An [AbortSignal](https://nodejs.org/api/globals.html#globals_class_abortsignal) that may be used to abort an ongoing request. **For Node >= v15.3.0**.
+- `options`* **<Object\>**:
+  - `url`* **<String\>** The url to request.
+  - `data` **<Object\>** | **<String\>** | **<Buffer\>** Data to write to the request. *Default*: `{}`.
+  - `format` **<String\>** The response format expected. One of *json*, *string*, *buffer*, *stream*. *Default*: `stream`.
+  - `encoding` **<String\>** The response encoding. See [encodings](encodings). *Default*: `utf8`.
 
+    The options below are from [Node http.request](https://nodejs.org/api/httphtml#http_http_request_url_options_callback) and depends on the version of Node used:
+  - `method` **<String\>** The HTTP request method. *Default*: `GET`.
+  - `headers` **<Object\>** An object containing request headers. *Default*: `{}`.
+  - `agent` **<http.Agent\>** | **<Boolean\>** Controls Agent behavior. *false* means a new Agent with default values will be used. *Default*: `undefined`.
+  - `auth` **<String\>** Basic authentication i.e. 'user:password' to compute an Authorization header. *Default*: `undefined`.
+  - `createConnection` **<Function\>** A function that produces a socket/stream to use for the request when the agent option is not used. This can be used to avoid creating a custom Agent class just to override the default *createConnection* function. *Default*: `undefined`.
+  - `defaultPort` **<Number\>** Default port for the protocol. *Default*: `agent.defaultPort` | `undefined`.
+  - `family` **<Number\>** IP address family to use when resolving host or hostname. Valid values are *4* or *6*. When unspecified, both IP v4 and v6 will be used. *Default*: `undefined`.
+  - `hints` **<Number\>** Optional dns.lookup() hints. *Default*: `undefined`.
+  - `insecureHTTPParser` **<Boolean\>** Use an insecure HTTP parser that accepts invalid HTTP headers when `true`. Using the insecure parser should be avoided. *Default*: `false`.
+  - `localAddress` **<String\>** Local interface to bind for network connections. *Default*: `undefined`.
+  - `localPort` **<Number\>** Local port to connect from. *Default*: `undefined`.
+  - `lookup` **<Function\>** Custom lookup function. *Default*: `dns.lookup()`.
+  - `maxHeaderSize` **<Number\>** Optionally overrides the value of *--max-http-header-size* for requests received from the server, i.e. the maximum length of response headers in bytes. **For Node >= v13.3.0**. *Default*: `8192`.
+  - `setHost` **<Boolean\>** Specifies whether or not to automatically add the `Host` header. *Default*: `true`.
+  - `signal` **<AbortSignal\>** An [AbortSignal](https://nodejs.org/api/globals.html#globals_class_abortsignal) that may be used to abort an ongoing request.
+  - `socketPath` **<String\>** Unix domain socket. Cannot be used if one of host or port is specified, as those specify a TCP Socket.
+  - `timeout` **<Number\>** A number specifying the socket timeout in milliseconds. This will set the timeout before the socket is connected. *Default*: `60000`.
+  - `uniqueHeaders` **<Array\>** A list of request headers that should be sent only once. If the header's value is an array, the items will be joined using ; .
+  - `joinDuplicateHeaders` **<Boolean\>** It joins the field line values of multiple headers in a request with , instead of discarding the duplicates. See message.headers for more information. *Default*: `false`.
 
-  - Returns: **<Promise\>**
-    - Resolve: **<Object\>**
-      - `statusCode` **<Number\>** The http/s response status code.
-      - `headers` **<Object\>** The http/s response headers.
-      - `body` **<Object\>** | **<String\>** | **<Buffer\>** | **<http.ServerResponse\>** The response body.
-    - Throws: **<RequesterError\>**
+- Returns: **<Promise\>**
+  - Resolve: **<Object\>**
+    - `statusCode` **<Number\>** The http/s response status code.
+    - `headers` **<Object\>** The http/s response headers.
+    - `body` **<Object\>** | **<String\>** | **<Buffer\>** | **<http.ServerResponse\>** The response body.
+  - Throws: **<RequesterError\>**
 
 \* required
 
 Examples:
+
 ```javascript
 // GET to have crypto market data in json
 (async () => {
@@ -743,21 +915,24 @@ const pipeline = promisify(stream.pipeline);
 })();
 ```
 
-## String
+### String
 
 String helper.
 
 - `string` **<Object\>** with the following properties:
 
-### split({ string, separator[, max] })
+#### split({ string, separator[, max] })
+
 Split a string with the specified separator with a possible maximum split values.
-  - `options` **<Object\>**
-    - `string` **<String\>**
-    - `separator` **<String\>** | **<RegExp\>**
-    - `max` **<Number\>** Optional maximum split values.
-  - Returns: **<Array\>**
+
+- `options` **<Object\>**
+  - `string` **<String\>**
+  - `separator` **<String\>** | **<RegExp\>**
+  - `max` **<Number\>** Optional maximum split values.
+- Returns: **<Array\>**
 
 Examples:
+
 ```javascript
 split({ string: 'a,b,c,d,e', separator: ',' }) // ['a', 'b', 'c', 'd', 'e']
 split({ string: 'a,b,c,d,e', separator: ',', max: 2 }) // ['a', 'b']
@@ -767,15 +942,18 @@ split({ string: 'a, b,c,  d,e', max: 2 }) // []
 split({ string: 'a, b,c,  d,e' }) // []
 ```
 
-### capitalize({ string[, first] })
+#### capitalize({ string[, first] })
+
 put to upper case the first letter of a string.
-  - `options` **<Object\>**
-    - `string` **<String\>**
-    - `first` **<Boolean\>** Whether only the first letter should be in upper case.
-    - `max` **<Number\>** Optional maximum split values.
-  - Returns: **<String\>**
+
+- `options` **<Object\>**
+  - `string` **<String\>**
+  - `first` **<Boolean\>** Whether only the first letter should be in upper case.
+  - `max` **<Number\>** Optional maximum split values.
+- Returns: **<String\>**
 
 Examples:
+
 ```javascript
 capitalize({ string: 'abcde' }) // "Abcde"
 capitalize({ string: ' abcde' }) // " abcde"
@@ -785,14 +963,17 @@ capitalize() // ""
 capitalize({ first: true }) // ""
 ```
 
-### camelCase({ string, separator })
+#### camelCase({ string, separator })
+
 Put to camel case a string which words are separated by a specific string or pattern.
-  - `options` **<Object\>**
-    - `string` **<String\>**
-    - `separator` **<String\>** | **<RegExp\>**
-  - Returns: **<String\>**
+
+- `options` **<Object\>**
+  - `string` **<String\>**
+  - `separator` **<String\>** | **<RegExp\>**
+- Returns: **<String\>**
 
 Examples:
+
 ```javascript
 camelCase({ string: 'camel-case-string', separator: '-' }) // "camelCaseString"
 camelCase({ string: 'camel, case, string', separator: ', ' }) // "camelCaseString"
@@ -804,13 +985,16 @@ camelCase({ string: 'camel,case,string' }) // ""
 camelCase({ separator: ',' }) // ""
 ```
 
-### charAt(string, index)
+#### charAt(string, index)
+
 Get a character at a specific index of a string. Support non-Basic-Multilingual-Plane (BMP) characters. The empty string is returned if unable to extract character from string at the specified index.
-  - `string` **<String\>**
-  - `index` **<Integer\>**
-  - Returns: **<String\>**
+
+- `string` **<String\>**
+- `index` **<Integer\>**
+- Returns: **<String\>**
 
 Examples:
+
 ```javascript
 charAt(); // ""
 charAt(null|undefined|NaN); // ""
@@ -821,13 +1005,16 @@ charAt('string', 5); // "g"
 charAt('😂𩷶𨭎𠬠', 0); // "😂"
 ```
 
-### replaceAt(string, index, value)
+#### replaceAt(string, index, value)
+
 Replace a value at a specific index of a string. Support non-Basic-Multilingual-Plane (BMP) characters. The empty string is returned if unable to replace the value at the specified index.
-  - `string` **<String\>**
-  - `index` **<Integer\>**
-  - Returns: **<String\>**
+
+- `string` **<String\>**
+- `index` **<Integer\>**
+- Returns: **<String\>**
 
 Examples:
+
 ```javascript
 replaceAt(); // ""
 replaceAt(null|undefined|NaN); // ""
@@ -841,19 +1028,39 @@ replaceAt('😂𩷶𨭎𠬠', 0, '🦄🦄🦄'); // "🦄🦄🦄𩷶𨭎𠬠"
 replaceAt('𩷶', 0, '𠬠'); // "𠬠"
 ```
 
-## Time
+#### formatSentence(string, lowercase)
+
+Format a string as sentence(s) starting with a capital letter and ending with a period.
+
+- `string` **<String\>**
+- `lowercase` **<Boolean\>** Whether to lowercase all other letters than the first one.
+- Returns: **<String\>** Empty string by default.
+
+Examples:
+
+```javascript
+formatSentence(true, true); // ""
+formatSentence('this is a sentence.not well formatted tested with NodeJS'); // "This is a sentence. Not well formatted tested with NodeJS."
+formatSentence('this is..a..sentence...'); // "This is. A. Sentence..."
+```
+
+### Time
+
 Time helper.
 
 - `time` **<Object\>** with the following properties:
 
-### sleep(ms)
+#### sleep(ms)
+
 Sleep during *ms* milliseconds without blocking the loop.
-  - `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
-  - Returns: **<Promise\>**
-    - Resolve: **<undefined\>**
-    - Never throws
+
+- `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
+- Returns: **<Promise\>**
+  - Resolve: **<undefined\>**
+  - Never throws
 
 Examples:
+
 ```javascript
 (async () => {
   console.log('hello');
@@ -862,24 +1069,30 @@ Examples:
 })();
 ```
 
-### isISOStringDate(thing)
+#### isISOStringDate(thing)
+
 Whether a string respects the ISO 8601 format.
-  - `thing` **<String\>**
-  - Returns: **<Boolean\>**
+
+- `thing` **<String\>**
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 isISOStringDate('2020-01-25T00:00:00.000Z'); // true
 isISOStringDate('2020-01-25'); // false
 isISOStringDate(''|undefined|null|NaN); // false
 ```
 
-### toLocaleISOString(d)
+#### toLocaleISOString(d)
+
 Get the locale ISO 8601 formatted string for a specified date.
-  - `d` **<Date\>**
-  - Returns: **<String\>** | **<undefined\>**
+
+- `d` **<Date\>**
+- Returns: **<String\>** | **<undefined\>**
 
 Examples:
+
 ```javascript
 const d = new Date('2020-01-25T15:58:37.181Z');
 d.toISOString(); // '2020-01-13T15:58:37.181Z'
@@ -887,20 +1100,21 @@ toLocaleISOString(d); // '2020-01-13T16:58:37.181Z' (Paris time)
 toLocaleISOString(undefined|null|NaN); // undefined
 ```
 
-### timeout(ms, promise)
+#### timeout(ms, promise)
+
 Set a timeout to a promise being resolved.
 
 **Note**:
 There is at the moment no way to cancel the promise execution even though this function can make you manage the execution time of a promise, although you can cancel the execution by another way like using an [AbortSignal](https://nodejs.org/api/globals.html#globals_class_abortsignal) to abort an HTTP request for an example (Node v15.3.0+).
 
-
-  - `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
-  - `promise` **<Promise\>**
-  - Returns: **<Promise\>**
-    - Resolve: **<Any\>** Data resolved by *promise*
-    - Throws: **<PromiseTimeoutError\>**
+- `ms` **<Number\>** Time in milliseconds. *Min*: `0` *Default*: `0`.
+- `promise` **<Promise\>**
+- Returns: **<Promise\>**
+  - Resolve: **<Any\>** Data resolved by *promise*
+  - Throws: **<PromiseTimeoutError\>**
 
 Examples:
+
 ```javascript
 // to be run in an async function
 const ac = new AbortController();
@@ -919,18 +1133,49 @@ try {
 }
 ```
 
-## Uuid
+#### ms
+
+Get times in milliseconds.
+
+- `ms` **<Object\>**
+  - `minute` **<Number\>**
+  - `hour` **<Number\>**
+  - `day` **<Number\>**
+  - `week` **<Number\>**
+  - `month` **<Number\>**
+
+#### getDate({ [d, add, subtract] })
+
+Returns the current date or the date passed as argument and adds/subtract any time from `minute`, `hour`, `day`, `week` or `month`.
+
+- `d` **<Date\>** | **<String\>**
+- `add` **<Object\>**
+- `subtract` **<Object\>**
+- Returns: **<Date\>**
+
+Examples:
+
+```javascript
+getDate(); // returns current date
+getDate({ d: '2020-01-25T15:58:37.181Z', add: { day: 2 }, subtract: { minute: 5 } }); // 2020-01-27T15:53:37.181Z (as a Date instance)
+```
+
+### Uuid
+
 Uuid helper.
 
 - `uuid` **<Object\>** with the following properties:
 
-### isValidUUID(thing[, version])
+#### isValidUUID(thing[, version])
+
 Whether a string is a valid uuid in a specified version.
-  - `thing` **<String\>**
-  - `version` **<String\>** *Min*: `0` *Max*: `4` *Default*: `4`.
-  - Returns: **<Boolean\>**
+
+- `thing` **<String\>**
+- `version` **<String\>** *Min*: `0` *Max*: `4` *Default*: `4`.
+- Returns: **<Boolean\>**
 
 Examples:
+
 ```javascript
 isValidUUID('ed94d970-3620-11ea-9dee-255c978dde81', 1); // true
 isValidUUID('ed94d970-3620-11ea-9dee-255c978dde81', 5); // false
@@ -938,7 +1183,7 @@ isValidUUID('0b5cce8d-f392-4636-a9c4-fee990d0ce5e'); // true
 isValidUUID(''|undefined|null|NaN, undefined|null|NaN); // false
 ```
 
-## Environment variables
+### Environment variables
 
 - **NODE_DEBUG**: used to debug *requester* helper.
 
@@ -946,9 +1191,9 @@ isValidUUID(''|undefined|null|NaN, undefined|null|NaN); // false
   - `NODE_DEBUG=requester` will debug requester helper.
   - `NODE_DEBUG=*` will debug requester helper plus other modules used in your project like fs, http, etc and using native *util.debuglog* debug function.
 
-## Errors
+### Errors
 
-### Object structure
+#### Object structure
 
 Errors emitted by **Consis** are native Error with an additional *code* property:
 
@@ -961,7 +1206,7 @@ Errors emitted by **Consis** are native Error with an additional *code* property
 }
 ```
 
-### Codes
+#### Codes
 
 <table style="text-align: center; vertical-align: center">
   <tr>
@@ -978,7 +1223,7 @@ Errors emitted by **Consis** are native Error with an additional *code* property
   <tr>
     <td>PROMISE_TIMEOUT</td>
     <td>promise timed out</td>
-    <td>lib/time</td>
+    <td>src/time</td>
   </tr>
 
   <tr>
@@ -988,78 +1233,83 @@ Errors emitted by **Consis** are native Error with an additional *code* property
   <tr>
     <td>MISSING_OPTIONS</td>
     <td><i>options</i> parameter is missing</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>BAD_URL_PROTOCOL</td>
     <td>protocol found in <i>options.url</i> is invalid</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>BAD_URL</td>
     <td><i>options.url</i> is invalid</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>BAD_FORMAT</td>
     <td><i>options.format</i> is invalid</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>BAD_ENCODING</td>
     <td><i>options.encoding</i> is invalid</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>STRINGIFY_BODY_ERROR</td>
     <td>stringifying request body from <i>options.data</i> led to an error</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>RESPONSE_ERROR</td>
     <td>an error occurred on <i>http.ServerResponse</i> stream</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>RESPONSE_FORMAT_ERROR</td>
     <td>an error occurred when formatting response body, based on <i>options.format</i> value</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>REQUEST_ERROR</td>
     <td>an error occurred on <i>http.ClientRequest</i> stream</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
   <tr>
     <td>REQUEST_TIMEOUT</td>
     <td>request timed out, based on <i>options.timeout</i> value</td>
-    <td>lib/requester</td>
+    <td>src/requester</td>
   </tr>
 
 </table>
 
-# Code of Conduct
+## Code of Conduct
+
 This project has a [Code of Conduct](.github/CODE_OF_CONDUCT.md). By interacting with this repository, organization, or community you agree to abide by its terms.
 
-# Contributing
+## Contributing
+
 Please have a look at our [TODO](TODO.md) for any work in progress.
 
 Please take also a moment to read our [Contributing Guidelines](.github/CONTRIBUTING.md) if you haven't yet done so.
 
-# Support
+## Support
+
 Please see our [Support](.github/SUPPORT.md) page if you have any questions or for any help needed.
 
-# Security
+## Security
+
 For any security concerns or issues, please visit our [Security Policy](.github/SECURITY.md) page.
 
-# Licence
+## License
+
 [MIT](LICENSE.md).

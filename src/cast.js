@@ -1,21 +1,5 @@
 /**
  * Type casting helper.
- *
- * Cast a value to a specific primitive type. If the value is
- * not of this type or can not be infer from this type, undefined is returned.
- *
- * undefined is an interesting value. When stringifying an object, an undefined property
- * disappears. Useful to respect data type schemas and where null values are not allowed.
- *
- *    - str(thing) -> String or undefined
- *    - num(thing, { le, ge } = {}) -> Number or undefined
- *    - int(thing, { le, ge } = {}) -> Integer Number or undefined
- *    - float(thing, { le, ge } = {}) -> Float Number or undefined
- *    - bool(thing) -> Boolean or undefined
- *    - arr(thing, allowEmpty = true) -> Array or undefined
- *    - date(thing) -> Date or undefined
- *    - round(n, nbDecimals) -> String or undefined
- *    - precision(n, nbDecimals) -> String or undefined
  */
 const { is, exists } = require('./object');
 
@@ -61,13 +45,13 @@ const number = function number(thing) {
     const value = thing.valueOf();
 
     if (is(Number, value)) {
-      if (Number.isFinite(value)) {
+      if (Number.isFinite(value) && value <= Number.MAX_SAFE_INTEGER) {
         castNum = value;
       }
     } else if (is(String, value) || is(Boolean, value)) {
       const cast = Number(value);
 
-      if (Number.isFinite(cast)) {
+      if (Number.isFinite(cast) && value <= Number.MAX_SAFE_INTEGER) {
         castNum = cast;
       }
     }

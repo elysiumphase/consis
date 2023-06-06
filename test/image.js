@@ -1,7 +1,7 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const { expect } = require('./Common');
-const { image: { isPng } } = require('../lib');
+const { image: { isPng } } = require('../src');
 
 describe('#image', function() {
   context('when using isPng', function() {

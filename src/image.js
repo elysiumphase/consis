@@ -1,7 +1,5 @@
 /**
  * Image helper.
- *
- * - isPng(buffer) -> Boolean
  */
 const { is } = require('./object');
 

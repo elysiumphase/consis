@@ -1,13 +1,6 @@
-/**
- * Consis
- *
- * A small Node.js library for type casting, http/s requests, object cloning,
- * and other object, string, image, time and uuid helpers.
- *
- * Author: Adrien Valcke <adrienvalcke@icloud.com>
- */
 const cast = require('./cast');
 const encodings = require('./encodings');
+const Enum = require('./Enum');
 const image = require('./image');
 const math = require('./math');
 const object = require('./object');
@@ -19,6 +12,7 @@ const uuid = require('./uuid');
 module.exports = Object.freeze({
   cast,
   encodings,
+  Enum,
   image,
   math,
   object,

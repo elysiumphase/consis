@@ -15,7 +15,7 @@ and our [TODO](../TODO.md).
 
 If you've found a bug in a [supported version](#supported-versions)
 of Consis, please report it with the
-[issue tracker](https://github.com/adrienv1520/consis/issues).
+[issue tracker](https://github.com/elysiumphase/consis/issues).
 
 ## Supported Versions
 The latest *stable* major version is currently supported by the team.

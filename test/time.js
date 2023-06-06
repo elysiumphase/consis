@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
 const { expect } = require('./Common');
-const { time: { isISOStringDate, sleep, toLocaleISOString, timeout } } = require('../lib');
+const { time: { isISOStringDate, sleep, toLocaleISOString, timeout, ms, getDate } } = require('../src');
 
 describe('#time', function() {
   context('when using isISOStringDate', function() {
@@ -416,6 +416,67 @@ describe('#time', function() {
 
       expect(error).to.not.exist;
       expect(res).to.equal('promise resolved');
+    });
+  });
+
+  context('when using ms', function() {
+    it('should be an object', function () {
+      expect(ms).to.be.an('object');
+    });
+
+    it('should return 1000 for one second', function () {
+      expect(ms.second).to.equal(1000);
+    });
+
+    it('should return 60000 for one minute', function () {
+      expect(ms.minute).to.equal(60000);
+    });
+
+    it('should return 3600000 for one hour', function () {
+      expect(ms.hour).to.equal(3600000);
+    });
+
+    it('should return 86400000 for one day', function () {
+      expect(ms.day).to.equal(86400000);
+    });
+  });
+
+  context('when using getDate', function() {
+    it('should return a date by default', function () {
+      expect(getDate()).to.be.a('date');
+    });
+
+    it('should return the exact same date if no subtract or add options', function () {
+      const d = new Date();
+      expect(getDate({ d, subtract: 5, add: new Error('error') })).to.be.a('date').and.to.eql(d);
+    });
+
+    it('should return a date with the correct subtracted time', function () {
+      const d = new Date();
+      const subtract = { second: 10, minute: 2, hour: 1, day: 5 };
+      const dateMs = d.getTime() - (ms.second * subtract.second) - (ms.minute * subtract.minute) - (ms.hour * subtract.hour) - (ms.day * subtract.day);
+      expect(getDate({ d, subtract })).to.be.a('date').and.to.eql(new Date(dateMs));
+    });
+
+    it('should return a date time with the correct subtracted time', function () {
+      const d = new Date();
+      const subtract = { second: 10, minute: 2, hour: 1, day: 5 };
+      const dateMs = d.getTime() - (ms.second * subtract.second) - (ms.minute * subtract.minute) - (ms.hour * subtract.hour) - (ms.day * subtract.day);
+      expect(getDate({ d, subtract }).getTime()).to.equal(dateMs);
+    });
+
+    it('should return a date with the correct added time', function () {
+      const d = new Date();
+      const add = { second: 5, minute: 8, hour: 1, day: 8 };
+      const dateMs = d.getTime() + (ms.second * add.second) + (ms.minute * add.minute) + (ms.hour * add.hour) + (ms.day * add.day);
+      expect(getDate({ d, add })).to.be.a('date').and.to.eql(new Date(dateMs));
+    });
+
+    it('should return a date time with the correct added time', function () {
+      const d = new Date();
+      const add = { second: 5, minute: 8, hour: 1, day: 8 };
+      const dateMs = d.getTime() + (ms.second * add.second) + (ms.minute * add.minute) + (ms.hour * add.hour) + (ms.day * add.day);
+      expect(getDate({ d, add }).getTime()).to.equal(dateMs);
     });
   });
 });

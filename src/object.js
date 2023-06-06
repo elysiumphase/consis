@@ -1,16 +1,5 @@
 /**
  * Object helper.
- *
- *    - exists(thing) -> Boolean
- *    - is(Type, thing) -> Boolean
- *    - hasOwn(thing, prop) -> Boolean
- *    - has(thing, prop) -> Boolean
- *    - sizeOwn(thing) -> Integer
- *    - isEmptyOwn(thing) -> Boolean
- *    - getType(thing) -> constructor Object
- *    - getTypeName(thing) -> String
- *    - compare(a, b) -> Object
- *    - clone(thing) -> Object cloned
  */
 
 /**
@@ -329,7 +318,7 @@ const clone = function clone(thing) {
           cloned = new Constructor(thing.valueOf());
           Object.defineProperties(cloned, descriptors);
         } else if (copyWithDescriptors.indexOf(Constructor) !== -1) {
-          // Reflect (muste be at the end)
+          // Reflect (must be at the end)
           const descriptors = getDescriptors(thing);
 
           cloned = new Constructor();
@@ -350,6 +339,39 @@ const clone = function clone(thing) {
   return cloned;
 };
 
+/**
+ * @func freeze
+ *
+ * Deep freeze anything except TypedArrays, DataView
+ * @param  {Any} thing
+ * @return {Any} thing
+ */
+const freeze = function freeze(thing) {
+  if (!exists(thing)) {
+    return Object.freeze(thing);
+  }
+
+  const Constructor = getType(thing);
+
+  if (typedArrays.includes(Constructor)
+    || Constructor === DataView) {
+    return thing;
+  }
+
+  const isPrimitive = primitives.includes(typeof thing);
+
+  if (isPrimitive) {
+    return Object.freeze(thing);
+  }
+
+  Reflect.ownKeys(thing).forEach((key) => {
+    const descriptor = Reflect.getOwnPropertyDescriptor(thing, key);
+    freeze(descriptor.value);
+  });
+
+  return Object.freeze(thing);
+};
+
 module.exports = Object.freeze({
   exists,
   is,
@@ -361,4 +383,5 @@ module.exports = Object.freeze({
   getTypeName,
   compare,
   clone,
+  freeze,
 });
