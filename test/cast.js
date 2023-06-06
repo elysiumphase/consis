@@ -1,5 +1,5 @@
 const { expect } = require('./Common');
-const { cast: { str, num, number, int, integer, toFloat, float, bool, arr, date, round, precision } } = require('../lib');
+const { cast: { str, num, number, int, integer, toFloat, float, bool, arr, date, round, precision } } = require('../src');
 
 describe('#cast', function() {
   context('when using str', function() {
@@ -110,6 +110,11 @@ describe('#cast', function() {
   });
 
   context('when using number', function() {
+    it('should return undefined if the number is > than the max safe integer', function() {
+      expect(number(5**152)).to.be.undefined;
+      expect(number('1.7516230804060214e+106')).to.be.undefined;
+    });
+
     it('should return the primitive number value of a number', function() {
       expect(number(0)).to.be.a('number').and.to.equals(0).and.to.not.be.an('object');
       expect(number(1)).to.be.a('number').and.to.equals(1).and.to.not.be.an('object');

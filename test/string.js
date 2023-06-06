@@ -1,5 +1,5 @@
 const { expect } = require('./Common');
-const { string: { split, capitalize, camelCase, charAt, replaceAt } } = require('../lib');
+const { string: { split, capitalize, camelCase, charAt, replaceAt, formatSentence } } = require('../src');
 
 describe('#string', function() {
   context('when using split', function() {
@@ -319,6 +319,37 @@ describe('#string', function() {
       expect(replaceAt('😂𩷶𨭎𠬠', 1, '🤣')).to.be.a('string').and.to.equal('😂🤣𨭎𠬠');
       expect(replaceAt('😂𩷶𨭎𠬠', 2, '🦄')).to.be.a('string').and.to.equal('😂𩷶🦄𠬠');
       expect(replaceAt('🥺𩷶𨭎𠬠', 3, '🦠')).to.be.a('string').and.to.equal('🥺𩷶𨭎🦠');
+    });
+  });
+
+  context('when using formatSentence', function() {
+    it('should return the empty string by default', function() {
+      expect(formatSentence()).to.be.a('string').and.to.equal('');
+      expect(formatSentence(NaN)).to.be.a('string').and.to.equal('');
+      expect(formatSentence(null)).to.be.a('string').and.to.equal('');
+      expect(formatSentence(undefined)).to.be.a('string').and.to.equal('');
+      expect(formatSentence(new Error('error'))).to.be.a('string').and.to.equal('');
+      expect(formatSentence({})).to.be.a('string').and.to.equal('');
+      expect(formatSentence([])).to.be.a('string').and.to.equal('');
+      expect(formatSentence(new Set())).to.be.a('string').and.to.equal('');
+      expect(formatSentence(new Map())).to.be.a('string').and.to.equal('');
+      expect(formatSentence(true, true)).to.be.a('string').and.to.equal('');
+    });
+
+    it('should return well-formatted sentence(s) and keep uppercase letters by default if not the first sentence\'s one', function() {
+      const string1 = 'this is a sentence.not well formatted tested with NodeJS';
+      const string2 = 'this is a sentence.    not well formatted';
+      const string3 = 'this is a sentence. not well formatted';
+      const string4 = '    this is a sentence    ';
+      const string5 = 'this is a sentence...not well formatted';
+      const string6 = 'this is..a..sentence...';
+
+      expect(formatSentence(string1)).to.be.an('string').and.to.equal('This is a sentence. Not well formatted tested with NodeJS.');
+      expect(formatSentence(string2)).to.be.an('string').and.to.equal('This is a sentence. Not well formatted.');
+      expect(formatSentence(string3)).to.be.an('string').and.to.equal('This is a sentence. Not well formatted.');
+      expect(formatSentence(string4)).to.be.an('string').and.to.equal('This is a sentence.');
+      expect(formatSentence(string5)).to.be.an('string').and.to.equal('This is a sentence...not well formatted.');
+      expect(formatSentence(string6)).to.be.an('string').and.to.equal('This is. A. Sentence...');
     });
   });
 });

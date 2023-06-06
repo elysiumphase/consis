@@ -1,12 +1,8 @@
 /**
  * Time helper.
- *
- *    - sleep(ms) -> Promise (resolve only)
- *    - isISOStringDate(thing) -> Boolean
- *    - toLocaleISOString(date) -> String
  */
 const { date, str } = require('./cast');
-const { is } = require('./object');
+const { exists, is } = require('./object');
 
 /**
  * @func sleep
@@ -70,7 +66,7 @@ const toLocaleISOString = function toLocaleISOString(d) {
 };
 
 /**
- * @ func timeout
+ * @func timeout
  * @param  {Number} ms
  * @param  {Promise} promise
  * @return {Promise}
@@ -95,9 +91,57 @@ const timeout = function timeout(ms, promise) {
   });
 };
 
+// time in milliseconds
+const ms = {
+  second: 1000,
+};
+ms.minute = 60 * ms.second;
+ms.hour = 60 * ms.minute;
+ms.day = 24 * ms.hour;
+ms.week = 7 * ms.day;
+ms.month = 30 * ms.day;
+
+/**
+ * @func getDate
+ * @param  {Date|String} d
+ * @param  {Object} add
+ * @param  {Object} subtract
+ * @throws {Error}
+ */
+const getDate = function getDate({ d, add, subtract } = {}) {
+  const dateOpts = date(d) || new Date();
+
+  if (!is(Object, subtract) && !is(Object, add)) {
+    return dateOpts;
+  }
+
+  let subtractMs = 0;
+  let addMs = 0;
+
+  if (is(Object, subtract)) {
+    Object.keys(subtract).forEach((key) => {
+      if (is(Number, subtract[key]) && exists(ms[key])) {
+        subtractMs += subtract[key] * ms[key];
+      }
+    });
+  }
+
+  if (is(Object, add)) {
+    Object.keys(add).forEach((key) => {
+      if (is(Number, add[key]) && exists(ms[key])) {
+        addMs += add[key] * ms[key];
+      }
+    });
+  }
+
+  return new Date(dateOpts.getTime() - subtractMs + addMs);
+};
+
 module.exports = Object.freeze({
   isISOStringDate,
   sleep,
   toLocaleISOString,
   timeout,
+  ms,
+  getDate,
 });

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 1.4.0 - delivery @06/06/2023
+
+- feat: add Enum helper
+- feat(string): add formatSentence method
+- feat(time): add getDate method
+- feat(object): add freeze method
+- fix(requester): json content-type header detection and global refacto
+- fix(cast): numbers greater than the max safe integer would be assigned undefined
+- chore: update dev dependencies
+- docs: update docs
+
 ## 1.3.2 - delivery @30/11/2020
 
 - fix requester to add query data to path and not in body for GET requests

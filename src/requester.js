@@ -1,25 +1,18 @@
+/* eslint-disable no-promise-executor-return */
 /**
- * Requester.
- *
- *    - requester(options) -> Promise({ statusCode, headers, body })
- *
- * options:
- *  - url
- *  - data
- *  - format
- *  - encoding
+ * Requester helper.
  *
  * - https://nodejs.org/api/http.html#http_http_request_url_options_callback
  */
 const http = require('http');
 const https = require('https');
-const { parse: parseUrl } = require('url');
 const querystring = require('querystring');
 const { debuglog } = require('util');
 const encodings = require('./encodings');
+const { str } = require('./cast');
 const {
-  is,
   clone,
+  is,
   exists,
   hasOwn,
 } = require('./object');
@@ -31,11 +24,13 @@ const defaults = {
   format: 'stream',
   encoding: encodings.utf8,
   data: null,
-  body: '{}',
 
   // request options
-  headers: {},
-  method: 'GET',
+  request: {
+    body: '{}',
+    headers: {},
+    method: 'GET',
+  },
 };
 
 /**
@@ -54,33 +49,39 @@ const requester = function requester(options) {
       return reject(error);
     }
 
-    debug('options parameter: ', options);
+    debug('Options passed: ', options);
 
-    // opts will be used for request
-    const opts = clone(options) || {};
-    const data = is(Object, opts.data)
-      || is(String, opts.data)
-      || is(Buffer, opts.data) ? opts.data : defaults.data;
-    let format;
-    let encoding;
+    // request options
+    const requestOptions = clone(options);
     let protocol;
-    let query;
-    let pathname;
-    let body;
+    let requestBody = defaults.request.body;
+    let search = '';
+    let searchData;
+    let hash = '';
 
-    // parse url, get protocol, hostname, port and path
+    // format (module opts)
+    const format = formats.includes(options.format) ? options.format : defaults.format;
+
+    // encoding (module opts)
+    const encoding = hasOwn(encodings, options.encoding) ? options.encoding : defaults.encoding;
+
+    // data (module opts)
+    const data = is(Object, options.data)
+      || is(String, options.data)
+      || is(Buffer, options.data) ? options.data : defaults.data;
+
+    // parse url
     try {
       const {
         protocol: protocolUrl,
+        username,
+        password,
         hostname,
         port,
-        path,
-        query: queryUrl,
-        pathname: pathnameUrl,
-      } = parseUrl(opts.url);
-      query = queryUrl;
-      pathname = pathnameUrl;
-
+        pathname,
+        search: searchUrl,
+        hash: hashUrl,
+      } = new URL(options.url);
       // set protocol to http or https according to url
       if (protocolUrl === 'https:') {
         protocol = https;
@@ -93,10 +94,24 @@ const requester = function requester(options) {
         return reject(error);
       }
 
-      opts.protocol = protocolUrl;
-      opts.hostname = hostname;
-      opts.port = port;
-      opts.path = path;
+      // protocol as in request options
+      requestOptions.protocol = protocolUrl;
+
+      // auth
+      if (exists(username) && exists(password) && username !== '' && password !== '') {
+        requestOptions.auth = `${username}:${password}`;
+      } else if (is(String, options.auth)) {
+        requestOptions.auth = options.auth;
+      }
+
+      // hostname, port and path
+      requestOptions.hostname = hostname;
+      requestOptions.port = port;
+      requestOptions.path = pathname;
+
+      // search and hash
+      search = searchUrl;
+      hash = hashUrl;
     } catch (e) {
       const error = new Error(`bad url, ${e.message}`);
       error.name = 'RequesterError';
@@ -105,63 +120,29 @@ const requester = function requester(options) {
     }
 
     // method
-    if (!is(String, opts.method)) {
-      opts.method = defaults.method;
-    }
+    requestOptions.method = is(String, options.method)
+      ? options.method
+      : defaults.request.method;
 
     // headers
-    if (!is(Object, opts.headers)) {
-      opts.headers = defaults.headers;
-    }
-
-    // format
-    if (!exists(opts.format)) {
-      ({ format } = defaults);
-    } else {
-      if (formats.indexOf(opts.format) === -1) {
-        const error = new Error(`bad format ${opts.format}`);
-        error.name = 'RequesterError';
-        error.code = 'BAD_FORMAT';
-        return reject(error);
-      }
-
-      ({ format } = opts);
-    }
-
-    // encoding
-    if (!exists(opts.encoding)) {
-      ({ encoding } = defaults);
-    } else {
-      if (!hasOwn(encodings, opts.encoding)) {
-        const error = new Error(`bad encoding ${opts.encoding}`);
-        error.name = 'RequesterError';
-        error.code = 'BAD_ENCODING';
-        return reject(error);
-      }
-
-      ({ encoding } = opts);
-    }
+    requestOptions.headers = is(Object, options.headers)
+      ? { ...options.headers }
+      : defaults.request.headers;
 
     // manage query data and body
     if (exists(data)) {
       // if Content-Type is application/x-www-form-urlencoded
-      if (opts.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-        // if method is GET recompose request path by adding both query and data query at the end
-        if (opts.method === 'GET') {
-          let queryData = querystring.stringify(data);
-
-          if (is(String, query)) {
-            queryData += `&${query}`;
-          }
-
-          opts.path = `${pathname}?${queryData}`;
-          body = defaults.body;
-        } else {
-          body = querystring.stringify(data);
-        }
-      } else if (opts.headers['Content-Type'] === 'application/json') {
+      if (options.headers
+        && (options.headers['Content-Type'] === 'application/x-www-form-urlencoded'
+          || options.headers['content-type'] === 'application/x-www-form-urlencoded')) {
+        // if method is GET recompose request path by adding both search and data search at the end
+        searchData = querystring.stringify(data);
+        requestBody = defaults.request.body;
+      } else if (options.headers
+          && (/application\/(vnd.api\+){0,1}json/.test(options.headers['Content-Type'])
+            || /application\/(vnd.api\+){0,1}json/.test(options.headers['content-type']))) {
         try {
-          body = JSON.stringify(data);
+          requestBody = JSON.stringify(data);
         } catch (e) {
           const error = new Error(`unable to stringify data, ${e.message}`);
           error.name = 'RequesterError';
@@ -169,27 +150,39 @@ const requester = function requester(options) {
           return reject(error);
         }
       } else {
-        body = data;
+        requestBody = is(String, data) ? data : str(data) || defaults.request.body;
       }
-    } else {
-      body = defaults.body;
     }
 
-    // let http(s).request manage bad options
-    // clean up request opts from wrapper options
-    delete opts.data;
-    delete opts.url;
-    delete opts.format;
-    delete opts.encoding;
+    // search
+    if (is(String, search) && search !== '') {
+      if (is(String, searchData) && searchData !== '') {
+        search += `&${searchData}`;
+      }
+    } else if (is(String, searchData) && searchData !== '') {
+      search = `?${searchData}`;
+    }
 
-    debug('module options: ', { format, encoding });
-    debug('request options: ', { ...opts, body });
+    requestOptions.path += search;
+
+    // hash
+    requestOptions.path += hash;
+
+    // clean request options from user options
+    delete requestOptions.url;
+    delete requestOptions.data;
+    delete requestOptions.format;
+    delete requestOptions.encoding;
+
+    debug('Module options: ', { data, format, encoding });
+    debug('Request options: ', { ...requestOptions, body: requestBody });
 
     // request
-    const req = protocol.request(opts, (res) => {
+    const req = protocol.request(requestOptions, (res) => {
       const { statusCode, headers = {} } = res;
 
       if (format === 'stream') {
+        debug('Response: ', { statusCode, headers, body: res });
         resolve({ statusCode, headers, body: res });
       } else {
         const buffers = [];
@@ -220,7 +213,7 @@ const requester = function requester(options) {
 
           try {
             if (exists(finalBuffer)) {
-              debug('response data: ', finalBuffer.toString(encoding));
+              debug('Response data: ', finalBuffer.toString(encoding));
 
               switch (format) {
                 case 'json':
@@ -234,8 +227,10 @@ const requester = function requester(options) {
               }
             }
 
+            debug('Response: ', { statusCode, headers, body: resBody });
             resolve({ statusCode, headers, body: resBody });
           } catch (e) {
+            debug('response: ', { statusCode, headers, body: finalBuffer.toString(encoding) });
             const error = new Error(`unable to format response in ${format}: ${finalBuffer.toString('utf8')}`);
             error.name = 'RequesterError';
             error.code = 'RESPONSE_FORMAT_ERROR';
@@ -255,7 +250,7 @@ const requester = function requester(options) {
 
     // request timeout
     req.on('timeout', () => {
-      req.abort();
+      req.destroy();
       const error = new Error('request timed out');
       error.name = 'RequesterError';
       error.code = 'REQUEST_TIMEOUT';
@@ -263,7 +258,7 @@ const requester = function requester(options) {
     });
 
     // write data to request
-    req.write(body);
+    req.write(requestBody);
 
     req.end();
   });

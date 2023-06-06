@@ -1,7 +1,5 @@
 /**
  * Number helper.
- *
- * - minmax(array) -> Object
  */
 const { is, compare } = require('./object');
 

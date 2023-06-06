@@ -1,5 +1,5 @@
 const { expect } = require('./Common');
-const { object: { exists, is, hasOwn, has, sizeOwn, isEmptyOwn, getType, getTypeName, compare, clone } } = require('../lib');
+const { object: { exists, is, hasOwn, has, sizeOwn, isEmptyOwn, getType, getTypeName, compare, clone, freeze } } = require('../src');
 
 describe('#object', function() {
   context('when using exists', function() {
@@ -1414,6 +1414,72 @@ describe('#object', function() {
         expect(clone(NaN)).to.be.NaN;
       });
     });
+  });
 
+  context('when using freeze', function() {
+    it('should deep freeze anything except TypedArrays and DataView', function() {
+      const symbol = Symbol('x');
+      const date = new Date();
+      const error = new Error('error');
+      const func = () => {};
+      const afunc = async () => {};
+      const generator = function* g() { yield 0; };
+
+      expect(freeze()).to.be.undefined;
+      expect(freeze(NaN)).to.eql(NaN);
+      expect(freeze(null)).to.eql(null);
+      expect(freeze('string')).to.eql('string');
+      expect(freeze(5)).to.eql(5);
+      expect(freeze(true)).to.eql(true);
+      expect(freeze(symbol)).to.eql(symbol);
+      expect(freeze([])).to.eql([]);
+      expect(freeze({})).to.eql({});
+      expect(freeze(new Uint16Array(new ArrayBuffer(8), 0, 4))).to.eql(new Uint16Array(new ArrayBuffer(8), 0, 4));
+      expect(freeze(Buffer.from(''))).to.eql(Buffer.from(''));
+      expect(freeze(date)).to.eql(date);
+      expect(freeze(error)).to.eql(error);
+      expect(freeze(new Uint16Array([5, 9]))).to.eql(new Uint16Array([5, 9]));
+      expect(freeze(func)).to.be.a('function');
+      expect(freeze(afunc)).to.not.be.undefined;
+      expect(freeze(generator)).to.not.be.undefined;
+      expect(freeze(new Map())).to.eql(new Map());
+      expect(freeze(new Uint32Array([5, 9]))).to.eql(new Uint32Array([5, 9]));
+      expect(freeze(new WeakMap()).constructor.name).to.eql('WeakMap');
+      expect(freeze(new WeakSet()).constructor.name).to.eql('WeakSet');
+    });
+
+    it('should deep freeze anything except TypedArrays and DataView', function() {
+      const typedArray = freeze(new Uint16Array(new ArrayBuffer(8), 0, 4));
+      typedArray.hello = 'world';
+
+      expect(typedArray.hello).to.equal('world');
+    });
+
+    it('should deep freeze', function() {
+      const symbol = Symbol('s');
+
+      const date = freeze(new Date());
+      const error = freeze(new Error('error'));
+      const func = freeze(() => {});
+      const afunc = freeze(async () => {});
+      const generator = freeze(function* g() { yield 0; });
+      const object = freeze({ hello: 'hello', [symbol]: { x: 5, y: { z: new Error('error z') } } });
+
+      date.hello = 'world';
+      error.hello = 'world';
+      func.hello = 'world';
+      afunc.hello = 'world';
+      generator.hello = 'world';
+      object.world = 'world';
+      object[symbol].y.z = 'world';
+
+      expect(date.hello).to.be.undefined;
+      expect(error.hello).to.be.undefined;
+      expect(func.hello).to.be.undefined;
+      expect(afunc.hello).to.be.undefined;
+      expect(generator.hello).to.be.undefined;
+      expect(object.world).to.be.undefined;
+      expect(object[symbol]).to.eql({ x: 5, y: { z: new Error('error z') } });
+    });
   });
 });

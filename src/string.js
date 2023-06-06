@@ -1,11 +1,5 @@
 /**
  * String helper.
- *
- *    - split({ string, separator, max }) -> Array
- *    - capitalize({ string, first } = {}) -> String
- *    - camelCase({ string, separator } = {}) -> String
- *    - charAt(string, index) -> String
- *    - replaceAt(string, index, value) -> String
  */
 const { is } = require('./object');
 const { int } = require('./cast');
@@ -160,10 +154,41 @@ const replaceAt = function replaceAt(string, index, value) {
   return replaced;
 };
 
+/**
+ * @func formatSentence
+ *
+ * Format a string as sentence(s) starting with a capital letter and ending with a period.
+ *
+ * @param  {String} string
+ * @param  {Boolean} lowercase Whether to lowercase all other letters than the first one
+ * @return {String} Empty string by default
+ */
+const formatSentence = function formatSentence(string, lowercase = false) {
+  if (!is(String, string)) {
+    return '';
+  }
+
+  const toLowerCase = lowercase === true;
+  const sentences = string.split(/(?<!\.)\.\s*(?!\.)|(?<!\.)\.{2}\s*(?!\.)/g);
+
+  return sentences.map((sentence) => {
+    const str = sentence.trim();
+
+    if (str !== '') {
+      const formatted = `${str.charAt(0).toUpperCase()}${str.slice(1).replace(/\.$/, '')}.`;
+
+      return toLowerCase ? formatted.toLowerCase() : formatted;
+    }
+
+    return undefined;
+  }).filter(Boolean).join(' ');
+};
+
 module.exports = Object.freeze({
   split,
   capitalize,
   camelCase,
   charAt,
   replaceAt,
+  formatSentence,
 });
