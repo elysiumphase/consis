@@ -1,6 +1,6 @@
 {
   "name": "consis",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "Elysium Phase <hi@elysiumphase.com> (https://github.com/elysiumphase)",
   "description": "A small Node.js library for type casting, http/s requests, object cloning, and other math, object, string, image, time and uuid helpers",
   "bin": {},

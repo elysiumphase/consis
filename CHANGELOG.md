@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.1 - delivery @07/06/2023
+
+- docs: fix author
+
 ## 1.4.0 - delivery @06/06/2023
 
 - feat: add Enum helper
