@@ -225,9 +225,12 @@ const typedArrays = [
  *    + WeakSet
  *    + SharedArrayBuffer (for security reasons)
  * @param  {Any} thing
+ * @param  {Boolean} ignoreUndefinedProperties
  * @return {Any}
  */
-const clone = function clone(thing) {
+const clone = function clone(thing, { ignoreUndefinedProperties: ignoreUndefinedProps } = {}) {
+  const ignoreUndefinedProperties = ignoreUndefinedProps === true;
+
   if (!exists(thing)) {
     return thing;
   }
@@ -238,11 +241,15 @@ const clone = function clone(thing) {
 
     Reflect.ownKeys(obj).forEach((key) => {
       const descriptor = Reflect.getOwnPropertyDescriptor(obj, key);
-      const clonedValue = clone(descriptor.value);
 
-      delete descriptor.value;
-      descriptor.value = clonedValue;
-      descriptors[key] = descriptor;
+      if (!ignoreUndefinedProperties
+        || (ignoreUndefinedProperties && descriptor.value !== undefined)) {
+        const clonedValue = clone(descriptor.value, { ignoreUndefinedProperties });
+
+        delete descriptor.value;
+        descriptor.value = clonedValue;
+        descriptors[key] = descriptor;
+      }
     });
 
     return descriptors;
@@ -252,34 +259,43 @@ const clone = function clone(thing) {
 
   if (exists(Constructor)) {
     const typeOfThing = typeof thing;
-    const isPrimitive = primitives.indexOf(typeOfThing) !== -1;
+    const isPrimitive = primitives.includes(typeOfThing);
 
     if (!isPrimitive) {
       /**
        * first type must not be undefined or a function
        * then the constructor must not be included in unsupported objects
        */
-      if (typeOfThing !== 'undefined' && typeOfThing !== 'function' && notSupportedObjects.indexOf(Constructor) === -1 /* && util.types.isProxy(thing) */) {
+      if (typeOfThing !== 'undefined' && typeOfThing !== 'function' && !notSupportedObjects.includes(Constructor) /* && util.types.isProxy(thing) */) {
         if (Constructor === Array) {
           // Array
           cloned = [];
 
           thing.forEach((value, key) => {
-            cloned[key] = clone(value);
+            if (!ignoreUndefinedProperties || (ignoreUndefinedProperties && value !== undefined)) {
+              cloned[key] = clone(value, { ignoreUndefinedProperties });
+            }
           });
         } else if (Constructor === Map) {
           // Map
           cloned = new Map();
 
           thing.forEach((value, key) => {
-            cloned.set(clone(key), clone(value));
+            if (!ignoreUndefinedProperties || (ignoreUndefinedProperties && value !== undefined)) {
+              cloned.set(
+                clone(key, { ignoreUndefinedProperties }),
+                clone(value, { ignoreUndefinedProperties }),
+              );
+            }
           });
         } else if (Constructor === Set) {
           // Set
           cloned = new Set();
 
           thing.forEach((value) => {
-            cloned.add(clone(value));
+            if (!ignoreUndefinedProperties || (ignoreUndefinedProperties && value !== undefined)) {
+              cloned.add(clone(value, { ignoreUndefinedProperties }));
+            }
           });
         } else if (Constructor === DataView) {
           // DataView
@@ -297,7 +313,7 @@ const clone = function clone(thing) {
         } else if (Constructor === RegExp) {
           // RegExp
           cloned = new RegExp(thing.source, thing.flags);
-        } else if (typedArrays.indexOf(Constructor) !== -1) {
+        } else if (typedArrays.includes(Constructor)) {
           // Typed Arrays
           cloned = new Constructor(thing);
         } else if (Constructor === String) {
@@ -317,7 +333,7 @@ const clone = function clone(thing) {
 
           cloned = new Constructor(thing.valueOf());
           Object.defineProperties(cloned, descriptors);
-        } else if (copyWithDescriptors.indexOf(Constructor) !== -1) {
+        } else if (copyWithDescriptors.includes(Constructor)) {
           // Reflect (must be at the end)
           const descriptors = getDescriptors(thing);
 

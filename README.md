@@ -47,7 +47,7 @@
     - [getType(thing)](#gettypething)
     - [getTypeName(thing)](#gettypenamething)
     - [compare(a, b)](#comparea-b)
-    - [clone(thing)](#clonething)
+    - [clone(thing\[, options\])](#clonething-options)
     - [freeze(thing)](#freezething)
   - [Requester](#requester)
     - [requester(options): AsyncFunction](#requesteroptions-asyncfunction)
@@ -647,11 +647,13 @@ compare(NaN, NaN); // {}
 compare(); // {}
 ```
 
-#### clone(thing)
+#### clone(thing[, options])
 
 Make a deep copy of a specified object. **Does not handle circular references, use with caution**.
 
 - `thing` **<Any\>**
+- `options` **<Object\>**
+  - `ignoreUndefinedProperties` **<Boolean\>**
 - Returns: **<Any\>**
 
 **Supported**:
@@ -727,6 +729,11 @@ obj; // { a: { b: { c : 3 } } }
 clone(undefined); // undefined
 clone(null); // null
 clone(NaN); // NaN
+
+clone({ p: undefined }, { ignoreUndefinedProperties: true }); // {}
+clone([{ x: 5, y: undefined }], { ignoreUndefinedProperties: true }); // [{ x: 5 }]
+clone(new Set([{ x: undefined }, 5]), { ignoreUndefinedProperties: true }); // Set(2) { {}, 5 }
+clone(undefined, { ignoreUndefinedProperties: true }); // undefined
 ```
 
 #### freeze(thing)
