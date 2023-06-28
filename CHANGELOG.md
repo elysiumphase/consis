@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.5.0 - delivery @28/06/2023
+
+- feat(object): add ignoreUndefinedProperties option to clone helper
+
 ## 1.4.1 - delivery @07/06/2023
 
 - docs: fix author

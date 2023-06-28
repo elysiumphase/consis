@@ -1414,6 +1414,41 @@ describe('#object', function() {
         expect(clone(NaN)).to.be.NaN;
       });
     });
+
+    context('when cloning and ignoring undefined properties', function() {
+      it('should return properties set to undefined by default', function() {
+        const o = { x: undefined };
+        const set = clone(new Set([o, 5]));
+        const map = clone(new Map([['a', undefined], ['b', { o }]]));
+        const error = new Error('error');
+        error.code = undefined;
+
+        expect(clone({ a: undefined }, { ignoreUndefinedProperties: false })).to.eql({ a: undefined });
+        expect(clone({ a: undefined, b: 5 }, { ignoreUndefinedProperties: false })).to.eql({ a: undefined, b: 5 });
+        expect(clone([{ a: undefined, b: 5 }], { ignoreUndefinedProperties: false })).to.eql([{ a: undefined, b: 5 }]);
+        expect(clone(undefined, { ignoreUndefinedProperties: false })).to.eql(undefined);
+        expect(set.values().next().value).to.have.property('x', undefined);
+        expect(map.get('a')).to.equals(undefined);
+        expect(map.get('b')).to.be.an('object').and.to.have.deep.property('o', { x: undefined });
+        expect(clone(error)).to.have.property('code', undefined);
+      });
+
+      it('should not return properties set to undefined when option is set to true', function() {
+        const o = { x: undefined };
+        const set = clone(new Set([o, 5]), { ignoreUndefinedProperties: true });
+        const map = clone(new Map([['a', undefined], ['b', { o }]]), { ignoreUndefinedProperties: true });
+        const error = new Error('error');
+        error.test = undefined;
+
+        expect(clone({ a: undefined }, { ignoreUndefinedProperties: true })).to.eql({});
+        expect(clone({ a: undefined, b: 5 }, { ignoreUndefinedProperties: true })).to.eql({ b: 5 });
+        expect(clone([{ a: undefined, b: 5 }], { ignoreUndefinedProperties: true })).to.eql([{ b: 5 }]);
+        expect(clone(undefined, { ignoreUndefinedProperties: true })).to.eql(undefined);
+        expect(set.values().next().value).to.not.have.property('x');
+        expect(map.values().next().value).to.have.deep.property('o', {});
+        expect(clone(error, { ignoreUndefinedProperties: true })).to.not.have.property('test');
+      });
+    });
   });
 
   context('when using freeze', function() {
